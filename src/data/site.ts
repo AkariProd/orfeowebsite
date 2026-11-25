@@ -102,14 +102,21 @@ export const projects = [
     description: "Blondel Live Session 01 is an acoustic live session with Choka, an artist I've worked alongside for years. Over several months, we reshaped a selection of his songs from the past five years into a 20-minute set about grief and letting go of the past, the idea behind its title, Il fallait que je fasse mon deuil.\n\nI co-arranged the live versions of every song and composed two of the pieces, Ça va and J'irai mieux tout seul. Every arrangement was built around Choka's voice and words, so the songs could breathe in a stripped-back setting with cello, guitar and bass.\n\nIt's one of the projects I'm proudest of, and the start of something bigger: Choka's next project arrives in early 2027. The session is out on all platforms.",
     link: 'https://youtu.be/XSjbgxFl47Y', linkLabel: 'Watch on YouTube',
     image: 'https://i.ytimg.com/vi/XSjbgxFl47Y/maxresdefault.jpg',
-    gallery: [{ youtube: 'XSjbgxFl47Y', caption: 'Full performance' }] },
+    gallery: [
+      { youtube: 'XSjbgxFl47Y', caption: 'Full performance' },
+      { src: '/images/work/choka/stage.jpg', caption: 'Photo: Flore Royer' },
+      { src: '/images/work/choka/live.jpg', ratio: 1200 / 1800, caption: 'Photo: Flore Royer' },
+      { src: '/images/work/choka/band.jpg', ratio: 1093 / 1800, caption: 'Photo: Flore Royer' },
+      { src: '/images/work/choka/session.jpg', ratio: 1, caption: 'Photo: Flore Royer' },
+    ] },
   // The artists box: its gallery is built from the `artists` list below.
   { title: "Artists I've worked with", meta: 'Sessions, live shows & records', years: '', kind: 'Artists', inProduction: false,
     description: 'Keys, production and arrangement for artists in Paris and beyond.', link: '', linkLabel: '', image: '', gallery: 'artists' },
 ] as Project[];
 
 /** A gallery entry: an image path, an image with a caption, or a YouTube video (id from the youtu.be link). */
-export type GalleryItem = string | { src: string; caption?: string } | { youtube: string; caption?: string };
+export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string };
+// ratio = width / height of the photo, so portrait or square photos aren't cropped (leave it out for landscape)
 export type Project = {
   title: string; meta: string; years: string; kind: string; inProduction: boolean;
   description: string; link: string; linkLabel: string; image: string; gallery: GalleryItem[] | 'artists';

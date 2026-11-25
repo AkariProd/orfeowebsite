@@ -5,12 +5,12 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import { projects, artists, type GalleryItem } from '../data/site';
 
-type Slide = { src: string; caption: string; yt?: string };
+type Slide = { src: string; caption: string; yt?: string; ratio?: number };
 const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 const toSlide = (g: GalleryItem): Slide =>
   typeof g === 'string' ? { src: g, caption: '' }
   : 'youtube' in g ? { src: ytThumb(g.youtube), caption: g.caption ?? '', yt: g.youtube }
-  : { src: g.src, caption: g.caption ?? '' };
+  : { src: g.src, caption: g.caption ?? '', ratio: g.ratio };
 // YouTube has no max-res thumbnail for some videos: fall back to the standard one
 const thumbFallback = (src: string) =>
   src.includes('i.ytimg.com') && src.includes('maxresdefault') ? { onerror: "this.onerror=null;this.src=this.src.replace('maxresdefault','hqdefault')" } : {};
@@ -74,7 +74,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
         <div class="g-col">
           <div class="g-track" data-track>
             {p.slides.map((s, k) => (
-              <figure class:list={['slide', { video: s.yt }]} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt}>
+              <figure class:list={['slide', { video: s.yt, shaped: s.ratio }]} style={s.ratio ? `--r:${s.ratio}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt}>
                 {s.src ? <img src={s.src} alt={s.caption} loading="lazy" {...thumbFallback(s.src)} /> : <span class="placeholder">[IMAGE {k + 1}]</span>}
                 {s.yt && <span class="yt-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span>}
               </figure>
@@ -139,6 +139,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .slide.current { opacity: 1; }
   .slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .slide.video { aspect-ratio: 16 / 9; background: #000; }
+  .slide.shaped { aspect-ratio: var(--r); width: min(100%, calc(72vh * var(--r))); align-self: center; }
   .slide.video :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
   .slide.video:has(:global(iframe)) .yt-play { display: none; }
   .yt-play { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); display: grid; place-items: center; color: #fff; z-index: 1; }
@@ -150,6 +151,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .counter { font-family: var(--mono); font-size: 13px; color: var(--text-50); }
 
   @media (max-width: 900px) {
+    .slide.shaped { width: min(100%, calc(46vh * var(--r))); }
     .g-col, .g.portrait .g-col { right: 50%; transform: translateX(50%); width: 84vw; }
     .g.portrait .g-col { width: 62vw; }
     .g-info { left: 16px; right: 16px; top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); transform: none; width: auto; padding: 16px; background: var(--card); border: 1px solid var(--line-2); border-radius: 14px; max-height: 38vh; overflow-y: auto; z-index: 3; overscroll-behavior: contain; box-shadow: 0 -20px 40px rgba(20,20,20,0.9); }
