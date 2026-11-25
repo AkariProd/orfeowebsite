@@ -39,7 +39,7 @@ const cfg = JSON.stringify(fmod);
         <svg class="i-stop" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
         <span data-play-label>Play</span>
       </button>
-      <span class="fm-time" data-time>00:00.0</span>
+      <span class="fm-time" data-fm-time>00:00.0</span>
     </div>
     <div class="fm-params" data-params></div>
     <p class="fm-empty" data-noparams hidden>This event has no parameters.</p>
@@ -101,7 +101,7 @@ const cfg = JSON.stringify(fmod);
     const startBtn = $<HTMLButtonElement>('[data-start]'), progress = $('[data-progress]'), bar = $('[data-bar]');
     const ui = $('[data-ui]'), boot = $('[data-boot]');
     const select = $<HTMLSelectElement>('[data-event]'), playBtn = $<HTMLButtonElement>('[data-play]');
-    const playLabel = $('[data-play-label]'), time = $('[data-time]');
+    const playLabel = $('[data-play-label]'), time = $("[data-fm-time]");
     const params = $('[data-params]'), noParams = $('[data-noparams]');
 
     let F: any, sys: any, core: any, desc: any, inst: any;
@@ -236,7 +236,7 @@ const cfg = JSON.stringify(fmod);
           val.textContent = labels.length ? labels[Math.round(v - pd.minimum)] ?? String(v) : discrete ? String(Math.round(v)) : v.toFixed(2);
           input.style.setProperty('--p', `${((v - pd.minimum) / (pd.maximum - pd.minimum || 1)) * 100}%`);
         };
-        input.disabled = !!(auto || ro);
+        input.disabled = !!(auto || (ro && !(flags & FLAG.GLOBAL)));
         input.addEventListener('input', () => {
           show();
           const v = Number(input.value);

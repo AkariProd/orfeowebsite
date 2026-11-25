@@ -149,13 +149,13 @@ export const contact = {
    Every event in the banks shows up in the picker; `events` sets which one
    is selected first. Parameters are read from the bank automatically. */
 export const fmod = {
-  enabled: false,
-  title: 'Kubika — adaptive music, live in FMOD',
-  text: 'This is the real FMOD Studio runtime running in your browser with the game’s own banks. Pick an event, press play and move the parameters.',
+  enabled: true,
+  title: 'Kubika — The Bayou, adaptive music live in FMOD',
+  text: 'This is the real FMOD Studio runtime running in your browser with the game’s own banks. Press play and move the parameters.',
   lib: '/fmod/fmodstudio.js',
   bankPath: '/fmod/banks/',
   banks: ['Master.strings.bank', 'Master.bank'],
-  events: ['event:/MUSIQUE/Musique'],
+  events: ['event:/Music_TheBayou'],
   /** only list events whose path starts with one of these (empty = all) */
   include: [] as string[],
 };
