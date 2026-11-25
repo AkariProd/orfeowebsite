@@ -139,3 +139,23 @@ export const contact = {
   intro: 'Got a campaign, a game or a film that needs music or sound? Tell me about it.',
   projectTypes: ['Campaign / ad', 'Game', 'Film', 'Live / artist', 'Sound design'],
 };
+
+/* ── Interactive FMOD demo (Home page) ─────────────────────────────
+   Files live in public/fmod/:
+     fmodstudio.js + fmodstudio.wasm  ← from the FMOD Engine HTML5 package
+                                         (api/studio/lib/wasm/), same 2.03.x
+                                         version as the FMOD Studio that built the banks
+     banks/…                          ← built banks (strings bank first)
+   Every event in the banks shows up in the picker; `events` sets which one
+   is selected first. Parameters are read from the bank automatically. */
+export const fmod = {
+  enabled: false,
+  title: 'Kubika — adaptive music, live in FMOD',
+  text: 'This is the real FMOD Studio runtime running in your browser with the game’s own banks. Pick an event, press play and move the parameters.',
+  lib: '/fmod/fmodstudio.js',
+  bankPath: '/fmod/banks/',
+  banks: ['Master.strings.bank', 'Master.bank'],
+  events: ['event:/MUSIQUE/Musique'],
+  /** only list events whose path starts with one of these (empty = all) */
+  include: [] as string[],
+};

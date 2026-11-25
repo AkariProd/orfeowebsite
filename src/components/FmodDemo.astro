@@ -1,0 +1,339 @@
+---
+import { fmod } from '../data/site';
+import { toolIcons } from '../data/toolIcons';
+const glyph = toolIcons['FMOD'];
+const cfg = JSON.stringify(fmod);
+---
+<div class="fm card" data-fmod data-cfg={cfg}>
+  <div class="fm-head">
+    <span class="fm-logo" aria-hidden="true">
+      {glyph && <svg viewBox={glyph.viewBox} set:html={glyph.body} />}
+    </span>
+    <div class="fm-titles">
+      <h3>{fmod.title}</h3>
+      <p class="fm-status" data-status>Engine idle</p>
+    </div>
+    <span class="fm-led" data-led aria-hidden="true"></span>
+  </div>
+
+  <p class="fm-text">{fmod.text}</p>
+
+  <!-- before boot -->
+  <div class="fm-boot" data-boot>
+    <button class="btn fm-start" data-start>
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 5v14l12-7z" fill="currentColor"/></svg>
+      Start the FMOD engine
+    </button>
+    <div class="fm-progress" data-progress hidden><span data-bar></span></div>
+  </div>
+
+  <!-- after boot -->
+  <div class="fm-ui" data-ui hidden>
+    <div class="fm-transport">
+      <label class="fm-select">
+        <span class="fm-k">Event</span>
+        <select data-event></select>
+      </label>
+      <button class="btn fm-play" data-play aria-pressed="false">
+        <svg class="i-play" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 5v14l12-7z" fill="currentColor"/></svg>
+        <svg class="i-stop" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>
+        <span data-play-label>Play</span>
+      </button>
+      <span class="fm-time" data-time>00:00.0</span>
+    </div>
+    <div class="fm-params" data-params></div>
+    <p class="fm-empty" data-noparams hidden>This event has no parameters.</p>
+  </div>
+
+  <p class="fm-credit">Audio engine: FMOD Studio by Firelight Technologies Pty Ltd.</p>
+</div>
+
+<script>
+  type Out = { val?: any };
+  const STATE = ['Playing', 'Sustaining', 'Stopped', 'Starting', 'Stopping'];
+  const FLAG = { READONLY: 1, AUTOMATIC: 2, GLOBAL: 4, DISCRETE: 8, LABELED: 16 };
+
+  function loadScript(src: string) {
+    return new Promise<void>((res, rej) => {
+      if ((window as any).FMODModule) return res();
+      const s = document.createElement('script');
+      s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error(`Could not load ${src}`));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function fetchWithProgress(urls: string[], onProgress: (done: number, total: number) => void) {
+    const sizes = await Promise.all(urls.map(async (u) => {
+      try { const h = await fetch(u, { method: 'HEAD' }); return Number(h.headers.get('content-length')) || 0; } catch { return 0; }
+    }));
+    const total = sizes.reduce((a, b) => a + b, 0);
+    let done = 0;
+    const out: string[] = [];
+    for (const u of urls) {
+      const r = await fetch(u);
+      if (!r.ok || !r.body) throw new Error(`Missing bank: ${u}`);
+      const reader = r.body.getReader();
+      const chunks: Uint8Array[] = [];
+      for (;;) {
+        const { done: end, value } = await reader.read();
+        if (end) break;
+        chunks.push(value); done += value.length; onProgress(done, total);
+      }
+      out.push(URL.createObjectURL(new Blob(chunks)));
+    }
+    return out;
+  }
+
+  function fmt(ms: number) {
+    const s = Math.max(0, ms) / 1000;
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+  }
+
+  function call<T>(attempts: (() => T)[]): T | undefined {
+    for (const a of attempts) { try { return a(); } catch { /* try next binding shape */ } }
+    return undefined;
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-fmod]').forEach((root) => {
+    const cfg = JSON.parse(root.dataset.cfg || '{}');
+    const $ = <T extends HTMLElement>(s: string) => root.querySelector(s) as T;
+    const status = $('[data-status]'), led = $('[data-led]');
+    const startBtn = $<HTMLButtonElement>('[data-start]'), progress = $('[data-progress]'), bar = $('[data-bar]');
+    const ui = $('[data-ui]'), boot = $('[data-boot]');
+    const select = $<HTMLSelectElement>('[data-event]'), playBtn = $<HTMLButtonElement>('[data-play]');
+    const playLabel = $('[data-play-label]'), time = $('[data-time]');
+    const params = $('[data-params]'), noParams = $('[data-noparams]');
+
+    let F: any, sys: any, core: any, desc: any, inst: any;
+    let globals = new Set<string>();
+    const o: Out = {};
+
+    const setStatus = (t: string, mode: 'idle' | 'busy' | 'on' | 'err' = 'idle') => { status.textContent = t; led.dataset.mode = mode; };
+    const ok = (r: number, what: string) => {
+      if (r !== F.OK) {
+        const msg = call([() => F.ErrorString(r)]) || `error ${r}`;
+        throw new Error(`${what}: ${msg}`);
+      }
+    };
+
+    async function start() {
+      startBtn.disabled = true;
+      progress.hidden = false;
+      try {
+        setStatus('Downloading banks…', 'busy');
+        const urls = cfg.banks.map((b: string) => cfg.bankPath + b);
+        const blobs = await fetchWithProgress(urls, (d, t) => {
+          if (t) bar.style.width = `${(d / t) * 100}%`;
+          setStatus(`Downloading banks… ${(d / 1048576).toFixed(1)}${t ? ` / ${(t / 1048576).toFixed(1)}` : ''} MB`, 'busy');
+        });
+
+        setStatus('Starting FMOD…', 'busy');
+        await loadScript(cfg.lib);
+        const dir = cfg.lib.replace(/[^/]+$/, '');
+        F = { INITIAL_MEMORY: 128 * 1024 * 1024, locateFile: (p: string) => dir + p };
+        await new Promise<void>((res) => {
+          F.preRun = () => cfg.banks.forEach((b: string, i: number) => F.FS_createPreloadedFile('/', b, blobs[i], true, false));
+          F.onRuntimeInitialized = () => res();
+          (window as any).FMODModule(F);
+        });
+
+        ok(F.Studio_System_Create(o), 'Studio_System_Create'); sys = o.val;
+        ok(sys.getCoreSystem(o), 'getCoreSystem'); core = o.val;
+        core.setDSPBufferSize(2048, 2);
+        if (core.getDriverInfo(0, null, null, o, null, null) === F.OK) core.setSoftwareFormat(o.val, F.SPEAKERMODE_DEFAULT, 0);
+        ok(sys.initialize(256, F.STUDIO_INIT_NORMAL, F.INIT_NORMAL, null), 'initialize');
+
+        const banks: any[] = [];
+        for (const b of cfg.banks) { ok(sys.loadBankFile('/' + b, F.STUDIO_LOAD_BANK_NORMAL, o), `loadBankFile ${b}`); banks.push(o.val); }
+        blobs.forEach((u) => URL.revokeObjectURL(u));
+
+        // keep the engine ticking
+        const tick = () => { sys.update(); if (inst) refresh(); };
+        setInterval(tick, 20);
+
+        // list events found in the banks
+        const paths = new Set<string>(cfg.events || []);
+        for (const bank of banks) for (const p of listEvents(bank)) paths.add(p);
+        let list = [...paths].filter((p) => p.startsWith('event:/'));
+        if (cfg.include?.length) list = list.filter((p) => cfg.include.some((x: string) => p.startsWith(x)) || cfg.events.includes(p));
+        list = list.filter((p) => sys.getEvent(p, {}) === F.OK);
+        list.sort((a, b) => (cfg.events.indexOf(b) > -1 ? 1 : 0) - (cfg.events.indexOf(a) > -1 ? 1 : 0) || a.localeCompare(b));
+        if (!list.length) throw new Error('No playable events found in the banks');
+        select.innerHTML = list.map((p) => `<option value="${p}">${p.replace('event:/', '')}</option>`).join('');
+
+        boot.hidden = true; ui.hidden = false;
+        setStatus(`Ready · ${list.length} event${list.length > 1 ? 's' : ''} loaded`, 'on');
+        choose(select.value);
+      } catch (e: any) {
+        console.error(e);
+        setStatus(e.message || 'FMOD failed to start', 'err');
+        startBtn.disabled = false;
+      }
+    }
+
+    function listEvents(bank: any): string[] {
+      const out: string[] = [];
+      const c: Out = {};
+      if (bank.getEventCount(c) !== F.OK || !c.val) return out;
+      const arr: Out = {}, n: Out = {};
+      const got = call([() => bank.getEventList(arr, c.val, n)]);
+      const descs: any[] = got === F.OK && Array.isArray(arr.val) ? arr.val : [];
+      for (const d of descs) {
+        const p: Out = {};
+        call([() => d.getPath(p, 512, null), () => d.getPath(p, 512, {})]);
+        if (typeof p.val === 'string') out.push(p.val);
+      }
+      return out;
+    }
+
+    function unlockAudio() {
+      // browsers keep audio suspended until a user gesture; poke the mixer from inside one
+      try { core.mixerSuspend(); core.mixerResume(); } catch { /* ignore */ }
+    }
+
+    function choose(path: string) {
+      if (inst) { inst.stop(F.STUDIO_STOP_IMMEDIATE); inst.release(); inst = null; }
+      ok(sys.getEvent(path, o), 'getEvent'); desc = o.val;
+      ok(desc.createInstance(o), 'createInstance'); inst = o.val;
+      buildParams();
+      setPlaying(false);
+    }
+
+    function buildParams() {
+      params.innerHTML = ''; globals = new Set();
+      const c: Out = {};
+      desc.getParameterDescriptionCount(c);
+      const n = c.val || 0;
+      let shown = 0;
+      for (let i = 0; i < n; i++) {
+        const pd = F.STUDIO_PARAMETER_DESCRIPTION();
+        if (desc.getParameterDescriptionByIndex(i, pd) !== F.OK) continue;
+        const flags = pd.flags || 0;
+        const auto = (flags & FLAG.AUTOMATIC) || pd.type > 0;
+        const ro = flags & FLAG.READONLY;
+        if (flags & FLAG.GLOBAL) globals.add(pd.name);
+        const discrete = !!(flags & (FLAG.DISCRETE | FLAG.LABELED));
+        const labels: string[] = [];
+        if (flags & FLAG.LABELED) {
+          for (let v = pd.minimum; v <= pd.maximum; v++) {
+            const l: Out = {};
+            call([() => desc.getParameterLabelByName(pd.name, v, l, 64, null)]);
+            labels.push(typeof l.val === 'string' ? l.val : String(v));
+          }
+        }
+        const step = discrete ? 1 : (pd.maximum - pd.minimum) / 200 || 0.01;
+        const row = document.createElement('div');
+        row.className = 'fm-param';
+        row.innerHTML = `
+          <div class="fm-prow"><span class="fm-pname"></span><span class="fm-ptag"></span><span class="fm-pval"></span></div>
+          <input type="range" min="${pd.minimum}" max="${pd.maximum}" step="${step}" value="${pd.defaultvalue}">`;
+        (row.querySelector('.fm-pname') as HTMLElement).textContent = pd.name;
+        (row.querySelector('.fm-ptag') as HTMLElement).textContent = [flags & FLAG.GLOBAL ? 'global' : '', auto ? 'automatic' : '', labels.length ? 'labeled' : discrete ? 'discrete' : ''].filter(Boolean).join(' · ');
+        const input = row.querySelector('input') as HTMLInputElement;
+        const val = row.querySelector('.fm-pval') as HTMLElement;
+        const show = () => {
+          const v = Number(input.value);
+          val.textContent = labels.length ? labels[Math.round(v - pd.minimum)] ?? String(v) : discrete ? String(Math.round(v)) : v.toFixed(2);
+          input.style.setProperty('--p', `${((v - pd.minimum) / (pd.maximum - pd.minimum || 1)) * 100}%`);
+        };
+        input.disabled = !!(auto || ro);
+        input.addEventListener('input', () => {
+          show();
+          const v = Number(input.value);
+          if (globals.has(pd.name)) sys.setParameterByName(pd.name, v, false);
+          else inst.setParameterByName(pd.name, v, false);
+        });
+        show();
+        params.appendChild(row);
+        shown++;
+      }
+      noParams.hidden = shown > 0;
+    }
+
+    function setPlaying(on: boolean) {
+      playBtn.setAttribute('aria-pressed', String(on));
+      playLabel.textContent = on ? 'Stop' : 'Play';
+    }
+
+    function refresh() {
+      const s: Out = {}, t: Out = {};
+      inst.getPlaybackState(s);
+      inst.getTimelinePosition(t);
+      const st = s.val ?? 2;
+      time.textContent = fmt(t.val || 0);
+      const playing = st !== 2;
+      setPlaying(playing && st !== 4);
+      led.dataset.mode = playing ? 'play' : 'on';
+      status.textContent = `${STATE[st] || 'Ready'} · ${select.value.replace('event:/', '')}`;
+    }
+
+    startBtn.addEventListener('click', start);
+    select.addEventListener('change', () => choose(select.value));
+    playBtn.addEventListener('click', () => {
+      unlockAudio();
+      const s: Out = {};
+      inst.getPlaybackState(s);
+      if (s.val === 2 || s.val === 4) inst.start();
+      else inst.stop(F.STUDIO_STOP_ALLOWFADEOUT);
+    });
+    root.addEventListener('pointerdown', () => core && unlockAudio(), { once: true });
+  });
+</script>
+
+<style>
+  .fm { padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 18px; max-width: calc(var(--col) - var(--pad)); }
+  .fm-head { display: flex; align-items: center; gap: 14px; }
+  .fm-logo { width: 44px; height: 44px; border-radius: 10px; background: #262626; display: grid; place-items: center; flex: none; }
+  .fm-logo svg { width: 30px; height: 30px; color: #fff; }
+  .fm-titles { flex: 1; min-width: 0; }
+  .fm-titles h3 { margin: 0; font-size: 15px; line-height: 24px; font-weight: 500; }
+  .fm-status { margin: 2px 0 0; font-family: var(--mono); font-size: 12px; color: var(--text-50); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fm-led { width: 8px; height: 8px; border-radius: 50%; background: #3a3a3a; flex: none; transition: background .2s, box-shadow .2s; }
+  .fm-led[data-mode='busy'] { background: #e0b341; animation: blink 1s infinite; }
+  .fm-led[data-mode='on'] { background: #6b6b6b; }
+  .fm-led[data-mode='play'] { background: #5ad17a; box-shadow: 0 0 10px rgba(90, 209, 122, .6); }
+  .fm-led[data-mode='err'] { background: #e5534b; }
+  @keyframes blink { 50% { opacity: .3; } }
+
+  .fm-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-60); }
+
+  .fm-boot { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .fm-start, .fm-play { background: #262626; }
+  .fm-start:hover, .fm-play:hover { background: #2e2e2e; }
+  .fm-start:disabled { opacity: .5; cursor: default; }
+  .fm-progress { width: 100%; height: 3px; border-radius: 3px; background: #262626; overflow: hidden; }
+  .fm-progress span { display: block; height: 100%; width: 0; background: rgba(255, 255, 255, .7); transition: width .15s; }
+
+  .fm-ui { display: flex; flex-direction: column; gap: 18px; }
+  .fm-ui[hidden], .fm-boot[hidden] { display: none; }
+  .fm-transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fm-select { flex: 1; min-width: 200px; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: #262626; border-radius: var(--radius); }
+  .fm-k { font-family: var(--mono); font-size: 12px; color: var(--text-40); text-transform: uppercase; }
+  .fm-select select { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text-90); font: inherit; font-size: 14px; outline: none; cursor: pointer; }
+  .fm-select option { background: #1a1a1a; }
+  .fm-play .i-stop { display: none; }
+  .fm-play[aria-pressed='true'] .i-stop { display: block; }
+  .fm-play[aria-pressed='true'] .i-play { display: none; }
+  .fm-time { font-family: var(--mono); font-size: 14px; color: var(--text-60); min-width: 64px; text-align: right; }
+
+  .fm-params { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .fm-params :global(.fm-param) { background: #202020; border-radius: 10px; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 12px; }
+  .fm-params :global(.fm-prow) { display: flex; align-items: baseline; gap: 8px; }
+  .fm-params :global(.fm-pname) { font-size: 14px; color: var(--text-90); }
+  .fm-params :global(.fm-ptag) { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--text-40); }
+  .fm-params :global(.fm-pval) { font-family: var(--mono); font-size: 13px; color: var(--text-70); }
+  .fm-params :global(input[type='range']) { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px; margin: 0; cursor: pointer;
+    background: linear-gradient(90deg, rgba(255,255,255,.8) var(--p, 0%), #333 var(--p, 0%)); }
+  .fm-params :global(input[type='range']:disabled) { opacity: .4; cursor: default; }
+  .fm-params :global(input[type='range']::-webkit-slider-thumb) { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 0; }
+  .fm-params :global(input[type='range']::-moz-range-thumb) { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 0; }
+  .fm-empty { margin: 0; font-size: 14px; color: var(--text-50); }
+
+  .fm-credit { margin: 0; font-size: 12px; color: var(--text-40); }
+
+  @media (max-width: 600px) {
+    .fm { padding: 18px 16px 16px; }
+    .fm-params { grid-template-columns: 1fr; }
+    .fm-time { min-width: 0; }
+  }
+</style>

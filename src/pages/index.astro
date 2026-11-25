@@ -3,7 +3,8 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import Media from '../components/Media.astro';
 import Carousel from '../components/Carousel.astro';
-import { home, site } from '../data/site';
+import FmodDemo from '../components/FmodDemo.astro';
+import { home, site, fmod } from '../data/site';
 import { inlineLinks } from '../lib/md';
 import { toolIcons } from '../data/toolIcons';
 
@@ -48,6 +49,13 @@ const stars = Array.from({ length: 42 }, (_, k) => ({
       ))}
     </Carousel>
   </section>
+
+  {fmod.enabled && (
+    <section class="section col">
+      <div class="section-head"><p class="label">Interactive audio</p></div>
+      <FmodDemo />
+    </section>
+  )}
 
   <section class="section col about">
     <p class="label">About Me</p>
