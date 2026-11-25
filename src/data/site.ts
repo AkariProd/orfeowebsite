@@ -17,7 +17,7 @@ export const site = {
   location: 'Paris, France',
   timeZone: 'Europe/Paris',
   email: 'orfeo.a.gombert@gmail.com',
-  avatar: '', // e.g. '/images/avatar.jpg'
+  avatar: '/images/avatar.jpg',
   cv: '', // e.g. '/files/orfeo-cv.pdf' — the button hides while empty
 
   // Contact form: create a free form at https://formspree.io and paste its ID
