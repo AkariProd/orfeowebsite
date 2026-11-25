@@ -208,6 +208,7 @@ const cfg = JSON.stringify(fmod);
       for (let i = 0; i < n; i++) {
         const pd = F.STUDIO_PARAMETER_DESCRIPTION();
         if (desc.getParameterDescriptionByIndex(i, pd) !== F.OK) continue;
+        if ((cfg.hide || []).includes(pd.name)) continue;
         const flags = pd.flags || 0;
         const auto = (flags & FLAG.AUTOMATIC) || pd.type > 0;
         const ro = flags & FLAG.READONLY;

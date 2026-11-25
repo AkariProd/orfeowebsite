@@ -158,4 +158,6 @@ export const fmod = {
   events: ['event:/Music_TheBayou'],
   /** only list events whose path starts with one of these (empty = all) */
   include: [] as string[],
+  /** parameters not shown as sliders (they keep their default value) */
+  hide: ['MusicStartMode'] as string[],
 };
