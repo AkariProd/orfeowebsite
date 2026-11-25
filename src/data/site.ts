@@ -107,7 +107,7 @@ export const projects = [
       { src: '/images/work/choka/stage.jpg', caption: 'Photo: Flore Royer' },
       { src: '/images/work/choka/live.jpg', ratio: 1200 / 1800, caption: 'Photo: Flore Royer' },
       { src: '/images/work/choka/band.jpg', ratio: 1093 / 1800, caption: 'Photo: Flore Royer' },
-      { src: '/images/work/choka/session.jpg', ratio: 1, caption: 'Photo: Flore Royer' },
+      { src: '/images/work/choka/session.jpg', ratio: 1, caption: 'Photo: Il-Ham Mohamed Said' },
     ] },
   // The artists box: its gallery is built from the `artists` list below.
   { title: "Artists I've worked with", meta: 'Sessions, live shows & records', years: '', kind: 'Artists', inProduction: false,
