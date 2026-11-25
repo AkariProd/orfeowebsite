@@ -137,8 +137,8 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .slide.current { opacity: 1; }
   .slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .slide.video { aspect-ratio: 16 / 9; background: #000; }
-  .slide.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
-  .slide.video:has(iframe) .yt-play { display: none; }
+  .slide.video :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
+  .slide.video:has(:global(iframe)) .yt-play { display: none; }
   .yt-play { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); display: grid; place-items: center; color: #fff; z-index: 1; }
   .back { position: absolute; top: 28px; left: 8vw; z-index: 3; height: 42px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 12px; background: var(--card); color: var(--text-90); font-size: 14px; cursor: pointer; opacity: 0; }
   .nav { position: absolute; right: 3vw; top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0; }
