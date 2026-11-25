@@ -1,0 +1,58 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import Media from '../components/Media.astro';
+import Carousel from '../components/Carousel.astro';
+import { resources } from '../data/site';
+
+const iconFor = (t: string) => (/instagram/i.test(t) ? 'ig' : /vst|plugin/i.test(t) ? 'plug' : 'pack');
+---
+<Base title="Resources" description="Plugins, sound packs and a piano library by Orfeo.">
+  <section class="col head">
+    <h1 class="h2">Resources</h1>
+    <p class="lead">{resources.intro}</p>
+  </section>
+
+  <section class="col list">
+    {resources.items.map((r) => {
+      const Tag = r.link ? 'a' : 'div';
+      const ext = /^https?:/.test(r.link);
+      return (
+        <Tag href={r.link || undefined} target={ext ? '_blank' : undefined} rel={ext ? 'noopener' : undefined} class:list={['card item', { linked: !!r.link }]}>
+          <span class="ic"><Icon name={iconFor(r.title)} size={15} /></span>
+          <span class="txt"><span class="t">{r.title}</span><span class="d">{r.text}</span></span>
+          {r.link && <span class="lnk"><Icon name="link" size={15} /></span>}
+        </Tag>
+      );
+    })}
+  </section>
+
+  {resources.videos.length > 0 && (
+    <section class="section">
+      <div class="section-head"><p class="label">Videos</p></div>
+      <Carousel label="Videos">
+        {resources.videos.map((v) => (
+          <article class="card vid">
+            <Media youtube={v.youtube} image={v.image} title={v.title} height="361px" />
+            <h3>{v.title}</h3>
+          </article>
+        ))}
+      </Carousel>
+    </section>
+  )}
+</Base>
+
+<style>
+  .head { display: flex; flex-direction: column; gap: 12px; }
+  .list { display: flex; flex-direction: column; gap: 20px; padding-top: 48px; max-width: calc(573px + var(--pad)); }
+  .item { padding: 16px; display: flex; gap: 16px; align-items: flex-start; transition: background 0.2s; }
+  .item.linked:hover { background: #202020; }
+  .ic { flex: none; width: 26px; height: 26px; border-radius: 6px; background: #2a2a2a; display: flex; align-items: center; justify-content: center; color: var(--text-70); }
+  .txt { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .t { font-size: 15px; color: var(--text-90); line-height: 1.5; }
+  .d { font-size: 14px; line-height: 21px; color: var(--text-50); }
+  .lnk { align-self: center; color: var(--text-50); display: flex; }
+  .item.linked:hover .lnk { color: #fff; }
+  .vid { padding: 2px; }
+  .vid h3 { margin: 0; padding: 12px 16px 18px; font-size: 15px; line-height: 26px; font-weight: 500; }
+</style>

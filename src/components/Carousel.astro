@@ -1,0 +1,51 @@
+---
+// Horizontal row of cards that bleeds off the right edge. Swipe, scroll, or use the arrows.
+import Icon from './Icon.astro';
+interface Props { label: string }
+const { label } = Astro.props;
+---
+<div class="carousel" data-carousel>
+  <div class="track" tabindex="0" aria-label={label}>
+    <slot />
+  </div>
+  <button class="arrow prev" aria-label="Previous" data-prev hidden><Icon name="prev" size={18} /></button>
+  <button class="arrow next" aria-label="Next" data-next><Icon name="next" size={18} /></button>
+</div>
+
+<style>
+  .carousel { position: relative; }
+  .track {
+    display: flex; gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    padding-right: var(--pad); scrollbar-width: none; overscroll-behavior-x: contain;
+  }
+  .track::-webkit-scrollbar { display: none; }
+  .track > :global(*) { scroll-snap-align: start; flex: 0 0 min(540px, 86vw); }
+  .arrow {
+    position: absolute; top: 150px; width: 44px; height: 44px; border-radius: 22px; border: 0;
+    background: rgba(20, 20, 20, 0.85); color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; backdrop-filter: blur(6px); transition: background 0.2s;
+  }
+  .arrow:hover { background: rgba(40, 40, 40, 0.95); }
+  .arrow[hidden] { display: none; }
+  @media (hover: none) { .arrow { display: none !important; } }
+  .prev { left: 16px; }
+  .next { left: min(484px, calc(86vw - 56px)); }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((c) => {
+    const track = c.querySelector<HTMLElement>('.track')!;
+    const prev = c.querySelector<HTMLButtonElement>('[data-prev]')!;
+    const next = c.querySelector<HTMLButtonElement>('[data-next]')!;
+    const step = () => (track.firstElementChild as HTMLElement)?.offsetWidth + 24 || 564;
+    const sync = () => {
+      prev.hidden = track.scrollLeft < 10;
+      next.hidden = track.scrollLeft + track.clientWidth >= track.scrollWidth - 10;
+    };
+    prev.addEventListener('click', () => track.scrollBy({ left: -step() }));
+    next.addEventListener('click', () => track.scrollBy({ left: step() }));
+    track.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    sync();
+  });
+</script>

@@ -1,0 +1,48 @@
+---
+import '../styles/global.css';
+import Sidebar from '../components/Sidebar.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../data/site';
+
+interface Props { title?: string; description?: string }
+const { title, description = site.seo.description } = Astro.props;
+const fullTitle = title ? `${title} — ${site.name}` : site.seo.title;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#141414" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="shell">
+      <Sidebar />
+      <main class="main" id="main">
+        <slot />
+        <Footer />
+      </main>
+    </div>
+
+    <script define:vars={{ tz: site.timeZone }}>
+      const upd = () => {
+        const now = new Date();
+        let d = '', t = '';
+        try {
+          d = now.toLocaleDateString('en-US', { timeZone: tz, month: '2-digit', day: '2-digit', year: 'numeric' });
+          t = now.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
+        } catch { d = now.toLocaleDateString(); t = now.toLocaleTimeString(); }
+        document.querySelectorAll('[data-date]').forEach((el) => (el.textContent = d));
+        document.querySelectorAll('[data-time]').forEach((el) => (el.textContent = t));
+      };
+      upd();
+      setInterval(upd, 30000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,130 @@
+---
+import Icon from './Icon.astro';
+import { site, socials } from '../data/site';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+
+const main = [
+  { label: 'Home', href: '/', icon: 'home' },
+  { label: 'Work', href: '/work', icon: 'work' },
+  { label: 'Contact', href: '/contact', icon: 'contact' },
+];
+const res = [
+  { label: 'Plugins', href: '/resources', icon: 'plug' },
+  { label: 'Instagram', href: socials[0].url, icon: 'ig', external: true },
+  { label: 'Sound Packs', href: '/resources', icon: 'pack', noActive: true },
+];
+---
+<header class="topbar">
+  <a href="/" class="brand">
+    <span class="avatar">{site.avatar ? <img src={site.avatar} alt="" /> : null}</span>
+    <span class="brand-text"><span class="sig">{site.name}</span><span class="role">{site.role}</span></span>
+  </a>
+  <button class="menu-btn" aria-expanded="false" aria-controls="sidenav" aria-label="Open menu" data-menu>
+    <span class="i-open"><Icon name="menu" size={20} /></span><span class="i-close"><Icon name="close" size={20} /></span>
+  </button>
+</header>
+
+<nav class="sidebar" id="sidenav" aria-label="Main">
+  <a href="/" class="brand brand-side">
+    <span class="avatar">{site.avatar ? <img src={site.avatar} alt="" /> : null}</span>
+    <span class="brand-text"><span class="sig">{site.name}</span><span class="role">{site.role}</span></span>
+  </a>
+
+  <div class="group">
+    {main.map((l) => (
+      <a href={l.href} class:list={['nav-item', { active: !l.noActive && isActive(l.href) }]} aria-current={!l.noActive && isActive(l.href) ? 'page' : undefined}>
+        <Icon name={l.icon} />{l.label}
+      </a>
+    ))}
+  </div>
+
+  <div class="group">
+    <span class="group-label">RESOURCES</span>
+    {res.map((l) => (
+      <a href={l.href} class:list={['nav-item', { active: !l.external && !l.noActive && isActive(l.href) }]} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener' : undefined}>
+        <Icon name={l.icon} />{l.label}
+      </a>
+    ))}
+  </div>
+
+  <div class="bottom">
+    {site.player?.embed && (
+      <div class="player">
+        <iframe src={site.player.embed} title="Orfeo — music player" loading="lazy" allow="autoplay; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    )}
+    <div class="date-card card">
+      <span class="date" data-date>&nbsp;</span>
+      <span class="loc">{site.location}</span>
+    </div>
+    {site.cv && (
+      <a href={site.cv} class="btn cv" download><Icon name="download" />Download CV</a>
+    )}
+  </div>
+</nav>
+
+<style>
+  .sidebar {
+    position: sticky; top: 0; align-self: flex-start;
+    flex: 0 0 var(--sidebar); width: var(--sidebar); height: 100vh;
+    padding: 20px 16px; display: flex; flex-direction: column; gap: 26px;
+    border-right: 1px solid var(--line); background: var(--bg); overflow-y: auto;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 44px; height: 44px; border-radius: 10px; background: #262626; overflow: hidden; flex: none; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .brand-text { display: flex; flex-direction: column; gap: 2px; }
+  .sig { font-family: var(--hand); font-size: 26px; line-height: 1; letter-spacing: -0.02em; }
+  .role { font-size: 13px; color: var(--text-60); line-height: 1.2; }
+  .group { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+  .group-label { font-size: 11px; letter-spacing: 0.08em; color: var(--text-40); padding: 0 10px 6px; }
+  .nav-item { height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 8px; color: var(--text-70); transition: background 0.2s, color 0.2s; }
+  .nav-item:hover { color: var(--text); background: #1a1a1a; }
+  .nav-item.active { background: var(--line); color: var(--text); }
+  .bottom { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .player { flex: none; border-radius: 16px; overflow: hidden; height: 344px; }
+  .player iframe { display: block; border: 0; width: 100%; height: 344px; border-radius: 16px; }
+  @media (max-height: 820px) and (min-width: 901px) { .group { gap: 2px; } .nav-item { height: 33px; } .sidebar { gap: 20px; } }
+  .date-card { padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+  .date { font-family: var(--mono); font-size: 22px; letter-spacing: -0.02em; line-height: 1.3; }
+  .loc { font-size: 13px; color: var(--text-60); }
+  .cv { justify-content: center; font-size: 14px; }
+  .topbar { display: none; }
+
+  @media (max-width: 900px) {
+    .topbar {
+      display: flex; position: sticky; top: 0; z-index: 30; justify-content: space-between; align-items: center;
+      padding: 12px 20px; background: rgba(20, 20, 20, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    }
+    .menu-btn { width: 44px; height: 44px; border: 0; border-radius: 10px; background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .menu-btn .i-close { display: none; }
+    .menu-btn[aria-expanded='true'] .i-open { display: none; }
+    .menu-btn[aria-expanded='true'] .i-close { display: flex; }
+    .menu-btn span { display: flex; }
+    .sidebar {
+      display: none; position: fixed; top: 69px; bottom: 0; left: 0; right: 0; z-index: 29;
+      width: 100%; height: calc(100dvh - 69px); max-height: none; align-self: auto;
+      border-right: 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); background: var(--bg);
+    }
+    .nav-item { height: 48px; font-size: 16px; }
+    .sidebar.open { display: flex; }
+    .brand-side { display: none; }
+  }
+</style>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('[data-menu]');
+  const nav = document.getElementById('sidenav');
+  btn?.addEventListener('click', () => {
+    const open = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    nav?.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+  nav?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => {
+    if (btn?.getAttribute('aria-expanded') === 'true') btn.click();
+  }));
+</script>

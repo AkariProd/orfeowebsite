@@ -1,0 +1,35 @@
+---
+// A 16:9-ish media box: shows an image, a click-to-play YouTube video, or a placeholder.
+import Icon from './Icon.astro';
+interface Props { image?: string; youtube?: string; title: string; height?: string; placeholder?: string }
+const { image = '', youtube = '', title, height = '350px', placeholder = 'VIDEO THUMBNAIL' } = Astro.props;
+const poster = image || (youtube ? `https://i.ytimg.com/vi/${youtube}/hqdefault.jpg` : '');
+---
+<div class="media" style={`height:${height}`} data-yt={youtube || undefined}>
+  {poster ? <img src={poster} alt="" loading="lazy" /> : <span class="placeholder">[{placeholder}]</span>}
+  {youtube ? (
+    <button class="play" aria-label={`Play ${title}`}><Icon name="play" size={18} /></button>
+  ) : (
+    !image && <span class="play ghost" aria-hidden="true"><Icon name="play" size={18} /></span>
+  )}
+</div>
+
+<style>
+  .media { position: relative; border-radius: 10px; background: var(--card-2); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .media :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .play { position: relative; width: 62px; height: 44px; border-radius: 12px; border: 0; background: rgba(255, 255, 255, 0.92); color: #141414; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+  .play:hover { transform: scale(1.06); }
+  .ghost { opacity: 0.25; cursor: default; }
+  @media (max-width: 600px) { .media { height: auto !important; aspect-ratio: 16 / 11; } }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.media[data-yt]').forEach((box) => {
+    box.querySelector('.play')?.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const id = box.dataset.yt;
+      box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    });
+  });
+</script>

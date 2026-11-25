@@ -1,0 +1,65 @@
+---
+// Draft project page — copy to be reviewed before going public.
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import Media from '../../components/Media.astro';
+
+const facts = [
+  { k: 'Role', v: 'Composer' },
+  { k: 'Studio', v: 'ISART Digital' },
+  { k: 'Engine', v: 'Unreal · Wwise' },
+  { k: 'Year', v: '2026' },
+];
+// Add a YouTube ID or audio file per track when ready.
+const tracks = ['[Exploration — A]', '[Combat — Panther]', '[Main theme — voice]'];
+---
+<Base title="Shamanism" description="Shamanism — adaptive, Tibetan-led game score by Orfeo. In production.">
+  <section class="col page">
+    <a href="/work" class="back">← Work</a>
+    <div class="title">
+      <div class="row"><h1 class="h2">Shamanism</h1><span class="pill">In production</span></div>
+      <p class="lead wide">A climb up a tower, floor by floor, guided by an eagle spirit — and a Tibetan-led score that reacts to every fight.</p>
+    </div>
+    <Media title="Shamanism" height="360px" placeholder="KEY ART / GAMEPLAY VIDEO" />
+    <div class="facts">
+      {facts.map((f) => <div class="card fact"><span>{f.k}</span><strong>{f.v}</strong></div>)}
+    </div>
+    <div class="block">
+      <p class="label">The music</p>
+      <div class="prose">
+        <p>A mid-sized ensemble led by Tibetan colours rather than a full orchestra: a female voice for the main character at the start and end of the journey, cello for the panther, bamboo flute for the eagle, and throat singing — my own — for the yak.</p>
+        <p>The score is adaptive, built in Wwise for Unreal. The exploration theme evolves after each combat (A → B → C), combat adds a layer per animal, and silence settles between floors.</p>
+      </div>
+    </div>
+    <div class="block">
+      <p class="label">Listen</p>
+      {tracks.map((t) => (
+        <div class="card track">
+          <span class="dot" aria-hidden="true"><Icon name="play" size={12} /></span>
+          <span class="t">{t}</span>
+          <span class="dur">[0:00]</span>
+        </div>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page { display: flex; flex-direction: column; gap: 28px; }
+  .back { align-self: flex-start; font-size: 14px; color: var(--text-60); }
+  .back:hover { color: var(--text); }
+  .title { display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .wide { max-width: 460px; }
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .fact { padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .fact span { font-size: 13px; color: var(--text-50); }
+  .fact strong { font-size: 15px; font-weight: 500; }
+  .block { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; }
+  .block .prose { padding-top: 4px; }
+  .track { height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 16px; }
+  .dot { width: 32px; height: 32px; border-radius: 16px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; }
+  .t { flex: 1; font-size: 15px; }
+  .dur { font-family: var(--mono); font-size: 14px; color: var(--text-40); }
+  @media (max-width: 600px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>

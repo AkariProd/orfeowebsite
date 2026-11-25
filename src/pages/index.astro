@@ -1,0 +1,143 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import Media from '../components/Media.astro';
+import Carousel from '../components/Carousel.astro';
+import { home, site } from '../data/site';
+import { inlineLinks } from '../lib/md';
+import { toolIcons } from '../data/toolIcons';
+
+const stars = Array.from({ length: 42 }, (_, k) => ({
+  x: (k * 137) % 100,
+  y: (k * 89) % 560,
+  w: 6 + ((k * 7) % 22),
+  o: 0.15 + ((k * 13) % 30) / 100,
+}));
+---
+<Base>
+  <div class="stars" aria-hidden="true">
+    {stars.map((s) => <span style={`left:${s.x}%;top:${s.y}px;width:${s.w}px;opacity:${s.o}`}></span>)}
+  </div>
+
+  <section class="hero col">
+    <h1 class="h1">{home.headline} <span class="grey">{home.headlineGrey}</span></h1>
+    <p class="lead">{home.intro}</p>
+    <div class="cta">
+      <a href="/contact" class="btn"><Icon name="spark" />Contact me</a>
+      <span class="time" data-time>&nbsp;</span>
+    </div>
+  </section>
+
+
+  <section class="section">
+    <div class="section-head">
+      <p class="label">Showreels</p>
+      <a href="/work" class="see-more">See More ↗</a>
+    </div>
+    <Carousel label="Showreels">
+      {home.reels.map((r) => (
+        <article class="reel card">
+          <Media image={r.image} youtube={r.youtube} title={r.title} />
+          <div class="reel-meta">
+            <div>
+              <h3>{r.title}</h3>
+              <p><span><Icon name="note" size={14} />{r.meta}</span><span><Icon name="cal" size={14} />{r.year}</span></p>
+            </div>
+          </div>
+        </article>
+      ))}
+    </Carousel>
+  </section>
+
+  <section class="section col about">
+    <p class="label">About Me</p>
+    <div class="prose">
+      {home.about.map((p) => <p set:html={inlineLinks(p)} />)}
+    </div>
+    <div class="exp card">
+      {home.experience.map((e) => (
+        <div class="exp-row">
+          <span class="exp-org">{e.org}</span>
+          <span class="exp-role">{e.role}</span>
+          <span class="exp-yrs">{e.years}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="section col tools" id="studio">
+    <h2 class="h2">Studio/Tools</h2>
+    <p class="lead">{home.toolsIntro}</p>
+    <div class="tool-grid">
+      {home.tools.map((t) => (
+        <div class="tool card">
+          <span class="tool-icon" aria-hidden="true">
+            {(() => {
+              const tool = t as { name: string; logo?: string; logoColor?: string; brandColor?: string };
+              const color = home.toolLogos === 'color';
+              const img = color ? tool.logoColor || '' : tool.logo || '';
+              const glyph = toolIcons[t.name];
+              if (img) return <img src={img} alt="" class:list={{ full: color }} />;
+              if (glyph) return <svg viewBox={glyph.viewBox} set:html={glyph.body} style={`width:${glyph.size ?? 24}px;height:${glyph.size ?? 24}px;${color && tool.brandColor ? `color:${tool.brandColor}` : ''}`} />;
+              return t.name.slice(0, 1);
+            })()}
+          </span>
+          <span class="tool-text"><span class="tool-name">{t.name}</span><span class="tool-kind">{t.kind}</span></span>
+        </div>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .stars { position: absolute; inset: 0 0 auto 0; height: 620px; pointer-events: none; overflow: hidden; }
+  .stars span { position: absolute; height: 1px; background: #fff; transform: rotate(-24deg); animation: drift 14s linear infinite; }
+  .stars span:nth-child(3n) { animation-duration: 22s; }
+  .stars span:nth-child(4n) { animation-duration: 18s; animation-delay: -6s; }
+  @keyframes drift { from { translate: 0 0; } to { translate: -40px 18px; } }
+
+  .hero { position: relative; display: flex; flex-direction: column; gap: 20px; }
+  .cta { display: flex; align-items: center; gap: 18px; padding-top: 12px; }
+  .time { font-size: 16px; letter-spacing: -0.02em; }
+
+
+  .reel { overflow: hidden; padding: 2px; }
+  .reel-meta { padding: 14px 18px 18px; }
+  .reel-meta h3 { margin: 0; font-size: 15px; line-height: 26px; font-weight: 500; }
+  .reel-meta p { margin: 4px 0 0; display: flex; gap: 22px; font-size: 14px; color: var(--text-50); }
+  .reel-meta p span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .about { display: flex; flex-direction: column; gap: 32px; padding-top: 160px; }
+  .prose :global(p:last-child) { margin-bottom: 0; }
+  .exp { padding: 8px 20px; }
+  .exp-row { display: flex; align-items: center; gap: 14px; min-height: 52px; }
+  .exp-org { flex: 1; font-size: 15px; }
+  .exp-role { font-size: 15px; color: var(--text-70); text-align: right; }
+  .exp-yrs { width: 92px; text-align: right; font-family: var(--mono); font-size: 15px; color: var(--text-40); text-transform: uppercase; }
+
+  .tools { display: flex; flex-direction: column; gap: 12px; padding-top: 120px; scroll-margin-top: 40px; }
+  .tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-top: 36px; }
+  .tool { height: 80px; display: flex; align-items: center; gap: 16px; padding: 0 16px; }
+  .tool-icon { width: 48px; height: 48px; border-radius: 10px; background: #262626; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 18px; color: var(--text-50); flex: none; }
+  .tool-icon svg { width: 24px; height: 24px; color: rgba(255, 255, 255, 0.88); }
+  .tool-icon img { width: 26px; height: 26px; object-fit: contain; opacity: 0.88; }
+  .tool-icon img.full { width: 34px; height: 34px; opacity: 1; }
+  .tool-icon { overflow: hidden; }
+  .tool-text { display: flex; flex-direction: column; gap: 2px; }
+  .tool-name { font-size: 15px; color: var(--text-90); line-height: 1.4; }
+  .tool-kind { font-size: 14px; color: var(--text-50); line-height: 1.4; }
+
+  @media (max-width: 900px) {
+    .stars { height: 420px; opacity: 0.45; }
+  }
+  @media (max-width: 600px) {
+    .stars span:nth-child(odd) { display: none; }
+    .exp-row { flex-wrap: wrap; gap: 4px 14px; padding: 10px 0; }
+    .exp-role { flex-basis: 100%; text-align: left; order: 3; }
+    .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 28px; }
+    .tool { height: auto; min-height: 68px; padding: 12px; gap: 12px; }
+    .tool-icon { width: 40px; height: 40px; }
+    .tool-name { font-size: 14px; }
+    .tool-kind { font-size: 12px; }
+  }
+</style>

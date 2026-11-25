@@ -1,0 +1,37 @@
+---
+import { site, socials } from '../data/site';
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="who">
+    <span class="sig">{site.name}</span>
+    <span>{site.eyebrow} · Paris</span>
+    <span class="copy">© {year} {site.fullName}</span>
+  </div>
+  <div class="links">
+    <div class="col-links">
+      <a href="/">Home</a><a href="/work">Work</a><a href="/resources">Resources</a><a href="/contact">Contact</a>
+    </div>
+    <div class="col-links">
+      {socials.map((s) => <a href={s.url} target="_blank" rel="noopener">{s.label}</a>)}
+      <a href={`mailto:${site.email}`}>Email</a>
+    </div>
+  </div>
+  <a href="/contact" class="btn">Get in touch →</a>
+</footer>
+
+<style>
+  .footer {
+    margin: 140px 0 0 calc(var(--pad) * -1); padding: 48px var(--pad);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 32px;
+    border-top: 1px solid var(--line); font-size: 14px; color: var(--text-60);
+  }
+  .who { display: flex; flex-direction: column; gap: 6px; }
+  .sig { font-family: var(--hand); font-size: 30px; line-height: 1; color: var(--text); }
+  .copy { color: var(--text-40); font-size: 13px; }
+  .links { display: flex; gap: 48px; }
+  .col-links { display: flex; flex-direction: column; gap: 8px; }
+  .col-links a { transition: color 0.2s; }
+  .col-links a:hover { color: var(--text); }
+  .btn { align-self: flex-start; }
+</style>

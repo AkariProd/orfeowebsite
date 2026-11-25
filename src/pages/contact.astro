@@ -1,0 +1,115 @@
+---
+import Base from '../layouts/Base.astro';
+import { site, socials, contact } from '../data/site';
+
+const info = [
+  { label: 'Email', value: site.email, url: `mailto:${site.email}` },
+  ...socials.map((s) => ({ label: s.label, value: s.handle, url: s.url })),
+];
+---
+<Base title="Contact" description="Get in touch with Orfeo about music and sound for your campaign, game or film.">
+  <section class="col head">
+    <h1 class="h2">Contact</h1>
+    <p class="lead">{contact.intro}</p>
+  </section>
+
+  <section class="col">
+    <form class="card form" data-form data-formspree={site.formspreeId} data-email={site.email} novalidate>
+      <div class="grid2">
+        <label>Name<input type="text" name="name" autocomplete="name" required /></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required /></label>
+      </div>
+      <label>Company<input type="text" name="company" autocomplete="organization" /></label>
+      <fieldset>
+        <legend>Project type</legend>
+        <div class="chips">
+          {contact.projectTypes.map((t, i) => (
+            <label class="chip"><input type="radio" name="type" value={t} checked={i === 0} /><span>{t}</span></label>
+          ))}
+        </div>
+      </fieldset>
+      <label>Message<textarea name="message" rows="7" required></textarea></label>
+      <button type="submit" class="submit">Submit</button>
+      <p class="status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section class="col info-wrap">
+    <p class="label">Contact info</p>
+    <div class="card info">
+      {info.map((i) => (
+        <a href={i.url} target={i.url.startsWith('http') ? '_blank' : undefined} rel="noopener" class="info-row">
+          <span>{i.label}</span><span class="v">{i.value}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .head { display: flex; flex-direction: column; gap: 12px; }
+  .form { margin-top: 56px; max-width: 564px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  label, legend { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--text-40); }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend { margin-bottom: 10px; }
+  input[type='text'], input[type='email'], textarea {
+    background: #222; border: 1px solid var(--line-2); border-radius: 10px; color: #fff; font: inherit; font-size: 15px;
+    padding: 11px 12px; width: 100%; transition: border-color 0.2s;
+  }
+  textarea { resize: vertical; min-height: 160px; }
+  input:focus, textarea:focus { outline: none; border-color: #555; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { flex-direction: row; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span { height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line-2); color: var(--text-70); font-size: 13px; display: inline-flex; align-items: center; transition: all 0.2s; }
+  .chip:hover span { border-color: #444; color: #fff; }
+  .chip input:checked + span { background: #fff; color: #141414; border-color: #fff; }
+  .chip input:focus-visible + span { outline: 2px solid var(--link); outline-offset: 2px; }
+  .submit { height: 48px; border: 0; border-radius: 10px; background: #fff; color: #1f1f1f; font-size: 15px; cursor: pointer; transition: opacity 0.2s; }
+  .submit:hover { opacity: 0.9; }
+  .submit:disabled { opacity: 0.5; cursor: wait; }
+  .status { margin: 0; font-size: 14px; color: var(--text-60); min-height: 1em; }
+  .status.err { color: #ff8a80; }
+  .info-wrap { padding-top: 88px; display: flex; flex-direction: column; gap: 32px; }
+  .info { padding: 8px 26px; }
+  .info-row { min-height: 52px; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 15px; }
+  .info-row .v { font-size: 16px; color: var(--text-60); transition: color 0.2s; text-align: right; word-break: break-all; }
+  .info-row:hover .v { color: #fff; }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } .info { padding: 8px 18px; } input[type='text'], input[type='email'], textarea { font-size: 16px; } .info-row { flex-wrap: wrap; gap: 2px 16px; padding: 8px 0; } }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-form]');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = form.querySelector<HTMLElement>('.status')!;
+    const btn = form.querySelector<HTMLButtonElement>('.submit')!;
+    status.classList.remove('err');
+    if (!form.checkValidity()) {
+      status.textContent = 'Please add your name, a valid email and a message.';
+      status.classList.add('err');
+      return;
+    }
+    const data = new FormData(form);
+    const id = form.dataset.formspree;
+    if (!id) {
+      // No form service set up yet: open the visitor's email app instead.
+      const body = `${data.get('message')}\n\n— ${data.get('name')}${data.get('company') ? ', ' + data.get('company') : ''}\n${data.get('email')}`;
+      location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent('New project — ' + data.get('type'))}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res = await fetch(`https://formspree.io/f/${id}`, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error();
+      form.reset();
+      status.textContent = 'Thanks — your message is on its way. I’ll get back to you soon.';
+    } catch {
+      status.textContent = `Something went wrong. You can email me directly at ${form.dataset.email}.`;
+      status.classList.add('err');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit';
+    }
+  });
+</script>
