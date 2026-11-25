@@ -98,8 +98,9 @@ export const projects = [
     description: 'A climb up a tower, guided by an eagle spirit, with a Tibetan-led adaptive score built in Wwise for Unreal.', link: '/work/shamanism', linkLabel: 'Project page', image: '', gallery: [] },
   { title: 'Seyni', meta: 'Short film by Ilham — score', years: '2026', kind: 'Film', inProduction: true,
     description: '[A few lines about the film and the score.]', link: '', linkLabel: '', image: '', gallery: [] },
-  { title: 'Live performance', meta: 'Piano & keys', years: '', kind: 'Live', inProduction: false,
-    description: '[A few lines about the performance.]', link: 'https://youtu.be/XSjbgxFl47Y', linkLabel: 'Watch on YouTube',
+  { title: 'Choka — Blondel Live Session 01', meta: 'Live co-arrangement & composition', years: '2026', kind: 'Live', inProduction: false,
+    description: "Blondel Live Session 01 is an acoustic live session with Choka, an artist I've worked alongside for years. Over several months, we reshaped a selection of his songs from the past five years into a 20-minute set about grief and letting go of the past, the idea behind its title, Il fallait que je fasse mon deuil.\n\nI co-arranged the live versions of every song and composed two of the pieces, Ça va and J'irai mieux tout seul. Every arrangement was built around Choka's voice and words, so the songs could breathe in a stripped-back setting with cello, guitar and bass.\n\nIt's one of the projects I'm proudest of, and the start of something bigger: Choka's next project arrives in early 2027. The session is out on all platforms.",
+    link: 'https://youtu.be/XSjbgxFl47Y', linkLabel: 'Watch on YouTube',
     image: 'https://i.ytimg.com/vi/XSjbgxFl47Y/maxresdefault.jpg',
     gallery: [{ youtube: 'XSjbgxFl47Y', caption: 'Full performance' }] },
   // The artists box: its gallery is built from the `artists` list below.

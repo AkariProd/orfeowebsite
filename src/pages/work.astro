@@ -65,7 +65,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
           <p class="oh"><span class="oh__inner kicker">{p.kind}{p.years ? ` · ${p.years}` : ''}{p.inProduction ? ' · In production' : ''}</span></p>
           <h2 class="oh"><span class="oh__inner">{p.title}</span></h2>
           <p class="oh"><span class="oh__inner sub">{p.meta}</span></p>
-          <p class="oh desc"><span class="oh__inner">{p.description}</span></p>
+          <p class="oh desc"><span class="oh__inner">{p.description.split('\n\n').map((t) => <span class="para">{t}</span>)}</span></p>
           <p class="oh cap-line"><span class="oh__inner" data-cap></span></p>
           {p.link && (
             <p class="oh"><a class="oh__inner more" href={p.link} target={/^https?:/.test(p.link) ? '_blank' : undefined} rel="noopener">{p.linkLabel || 'Learn more'} ↗</a></p>
@@ -126,6 +126,8 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .sub { font-size: 16px; color: var(--text-70); }
   .desc { margin-top: 20px; }
   .desc .oh__inner { display: block; font-size: 16px; line-height: 28px; color: var(--text-60); }
+  .desc .para { display: block; }
+  .desc .para + .para { margin-top: 12px; }
   .cap-line { margin-top: 20px; min-height: 24px; }
   .cap-line .oh__inner { font-size: 15px; color: var(--text); }
   .more { margin-top: 16px; color: var(--link); font-size: 15px; }
@@ -150,7 +152,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   @media (max-width: 900px) {
     .g-col, .g.portrait .g-col { right: 50%; transform: translateX(50%); width: 84vw; }
     .g.portrait .g-col { width: 62vw; }
-    .g-info { left: 16px; right: 16px; top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); transform: none; width: auto; padding: 16px; background: var(--card); border: 1px solid var(--line-2); border-radius: 14px; max-height: 38vh; overflow-y: auto; box-shadow: 0 -20px 40px rgba(20,20,20,0.9); }
+    .g-info { left: 16px; right: 16px; top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); transform: none; width: auto; padding: 16px; background: var(--card); border: 1px solid var(--line-2); border-radius: 14px; max-height: 38vh; overflow-y: auto; z-index: 3; overscroll-behavior: contain; box-shadow: 0 -20px 40px rgba(20,20,20,0.9); }
     .g-info h2 { font-size: 28px; }
     .desc { margin-top: 10px; }
     .desc .oh__inner { font-size: 14px; line-height: 22px; }
