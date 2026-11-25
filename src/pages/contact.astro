@@ -4,7 +4,8 @@ import { site, socials, contact } from '../data/site';
 
 const info = [
   { label: 'Email', value: site.email, url: `mailto:${site.email}` },
-  ...socials.map((s) => ({ label: s.label, value: s.handle, url: s.url })),
+  // Order: email, LinkedIn, then Instagram accounts.
+  ...[...socials].sort((a, b) => Number(!/linkedin/i.test(a.label)) - Number(!/linkedin/i.test(b.label))).map((s) => ({ label: s.label, value: s.handle, url: s.url })),
 ];
 ---
 <Base title="Contact" description="Get in touch with Orfeo about music and sound for your campaign, game or film.">
