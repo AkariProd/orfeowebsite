@@ -69,7 +69,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
           {p.lineup?.length && (
             <div class="oh lineup"><div class="oh__inner">
               <span class="lineup-k">Lineup</span>
-              <p class="m-list">{p.lineup.map((m, k) => <><span class="m-name">{m.name}</span> <span class="m-role">{m.role.toLowerCase().startsWith('piano on') ? m.role.replace(/^Piano/, 'piano') : m.role.toLowerCase()}</span>{k < p.lineup!.length - 1 && <span class="m-sep"> · </span>}</>)}</p>
+              <p class="m-list">{p.lineup.map((m, k) => <><span class="m-name">{m.name}</span> <span class="m-role">{m.role.toLowerCase()}{m.note && <> <em>{m.note}</em></>}</span>{k < p.lineup!.length - 1 && <span class="m-sep"> · </span>}</>)}</p>
             </div></div>
           )}
           <p class="oh cap-line"><span class="oh__inner" data-cap></span></p>

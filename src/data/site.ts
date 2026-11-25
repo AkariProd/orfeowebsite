@@ -107,7 +107,7 @@ export const projects = [
       { name: 'Orfeo Walcott', role: 'Piano' },
       { name: 'Francois Dupré', role: 'Cello' },
       { name: 'Milan Gombert', role: 'Bass' },
-      { name: 'Félix Famy', role: "Piano on L'odeur des anges" },
+      { name: 'Félix Famy', role: 'Piano', note: "on L'odeur des anges" },
     ],
     gallery: [
       { youtube: 'XSjbgxFl47Y', caption: 'Full performance' },
@@ -128,7 +128,7 @@ export type Project = {
   title: string; meta: string; years: string; kind: string; inProduction: boolean;
   description: string; link: string; linkLabel: string; image: string; gallery: GalleryItem[] | 'artists';
   /** optional musicians / credits shown under the description */
-  lineup?: { name: string; role: string }[];
+  lineup?: { name: string; role: string; note?: string }[];  // note is shown in italics
 };
 
 // Artists shown inside the "Artists I've worked with" box on the Work page (one image each).
