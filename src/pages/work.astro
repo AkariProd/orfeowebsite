@@ -66,6 +66,12 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
           <h2 class="oh"><span class="oh__inner">{p.title}</span></h2>
           <p class="oh"><span class="oh__inner sub">{p.meta}</span></p>
           <p class="oh desc"><span class="oh__inner">{p.description.split('\n\n').map((t) => <span class="para">{t}</span>)}</span></p>
+          {p.lineup?.length && (
+            <div class="oh lineup"><div class="oh__inner">
+              <span class="lineup-k">Lineup</span>
+              <p class="m-list">{p.lineup.map((m, k) => <><span class="m-name">{m.name}</span> <span class="m-role">{m.role.toLowerCase().startsWith('piano on') ? m.role.replace(/^Piano/, 'piano') : m.role.toLowerCase()}</span>{k < p.lineup!.length - 1 && <span class="m-sep"> · </span>}</>)}</p>
+            </div></div>
+          )}
           <p class="oh cap-line"><span class="oh__inner" data-cap></span></p>
           {p.link && (
             <p class="oh"><a class="oh__inner more" href={p.link} target={/^https?:/.test(p.link) ? '_blank' : undefined} rel="noopener">{p.linkLabel || 'Learn more'} ↗</a></p>
@@ -118,16 +124,22 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .view__bg { position: absolute; inset: 0; background: var(--bg); opacity: 0; }
   .g { position: absolute; inset: 0; display: none; }
   .g.current { display: block; }
-  .g-info { position: absolute; left: 8vw; top: 50%; transform: translateY(-50%); width: min(32vw, 440px); }
+  .g-info { position: absolute; left: 8vw; top: 50%; transform: translateY(-50%); width: min(32vw, 440px); max-height: calc(100vh - 150px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #333 transparent; z-index: 2; }
   .oh { overflow: hidden; margin: 0; }
   .oh__inner { display: inline-block; will-change: transform; }
   .kicker { font-size: 14px; color: var(--text-50); }
-  .g-info h2 { margin: 6px 0 6px; font-family: var(--display); font-weight: 500; font-size: clamp(34px, 3.8vw, 56px); line-height: 1.04; letter-spacing: -0.03em; }
+  .g-info h2 { margin: 6px 0 6px; font-family: var(--display); font-weight: 500; font-size: clamp(32px, 3.4vw, 48px); line-height: 1.04; letter-spacing: -0.03em; }
   .sub { font-size: 16px; color: var(--text-70); }
-  .desc { margin-top: 20px; }
-  .desc .oh__inner { display: block; font-size: 16px; line-height: 28px; color: var(--text-60); }
+  .desc { margin-top: 16px; }
+  .desc .oh__inner { display: block; font-size: 15px; line-height: 25px; color: var(--text-60); }
   .desc .para { display: block; }
-  .desc .para + .para { margin-top: 12px; }
+  .desc .para + .para { margin-top: 10px; }
+  .lineup { margin-top: 18px; }
+  .lineup .oh__inner { display: block; }
+  .lineup-k { display: block; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-40); margin-bottom: 8px; }
+  .m-list { margin: 0; font-size: 14px; line-height: 23px; }
+  .m-name { color: var(--text-90); }
+  .m-role, .m-sep { color: var(--text-50); }
   .cap-line { margin-top: 20px; min-height: 24px; }
   .cap-line .oh__inner { font-size: 15px; color: var(--text); }
   .more { margin-top: 16px; color: var(--link); font-size: 15px; }

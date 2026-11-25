@@ -99,9 +99,16 @@ export const projects = [
   { title: 'Seyni', meta: 'Short film by Ilham — score', years: '2026', kind: 'Film', inProduction: true,
     description: '[A few lines about the film and the score.]', link: '', linkLabel: '', image: '', gallery: [] },
   { title: 'Choka — Blondel Live Session 01', meta: 'Live co-arrangement & composition', years: '2026', kind: 'Live', inProduction: false,
-    description: "Blondel Live Session 01 is an acoustic live session with Choka, an artist I've worked alongside for years. Over several months, we reshaped a selection of his songs from the past five years into a 20-minute set about grief and letting go of the past, the idea behind its title, Il fallait que je fasse mon deuil.\n\nI co-arranged the live versions of every song and composed two of the pieces, Ça va and J'irai mieux tout seul. Every arrangement was built around Choka's voice and words, so the songs could breathe in a stripped-back setting with cello, guitar and bass.\n\nIt's one of the projects I'm proudest of, and the start of something bigger: Choka's next project arrives in early 2027. The session is out on all platforms.",
+    description: "Blondel Live Session 01 is an acoustic live session with Choka, an artist I've worked alongside for years. Over several months, we reshaped a selection of his songs from the past five years into a 20-minute set about grief and letting go of the past, the idea behind its title, Il fallait que je fasse mon deuil.\n\nI co-arranged the live versions of every song, composed two of the pieces, Ça va and J'irai mieux tout seul, and played piano on the session. Every arrangement was built around Choka's voice and words, so the songs could breathe in a stripped-back setting with piano, cello and bass.\n\nIt's one of the projects I'm proudest of, and the start of something bigger: Choka's next project arrives in early 2027. The session is out on all platforms.",
     link: 'https://youtu.be/XSjbgxFl47Y', linkLabel: 'Watch on YouTube',
     image: 'https://i.ytimg.com/vi/XSjbgxFl47Y/maxresdefault.jpg',
+    lineup: [
+      { name: 'Choka (Brian Chapin)', role: 'Vocals' },
+      { name: 'Orfeo Walcott', role: 'Piano' },
+      { name: 'Francois Dupré', role: 'Cello' },
+      { name: 'Milan Gombert', role: 'Bass' },
+      { name: 'Félix Famy', role: "Piano on L'odeur des anges" },
+    ],
     gallery: [
       { youtube: 'XSjbgxFl47Y', caption: 'Full performance' },
       { src: '/images/work/choka/stage.jpg', caption: 'Photo: Flore Royer' },
@@ -120,6 +127,8 @@ export type GalleryItem = string | { src: string; caption?: string; ratio?: numb
 export type Project = {
   title: string; meta: string; years: string; kind: string; inProduction: boolean;
   description: string; link: string; linkLabel: string; image: string; gallery: GalleryItem[] | 'artists';
+  /** optional musicians / credits shown under the description */
+  lineup?: { name: string; role: string }[];
 };
 
 // Artists shown inside the "Artists I've worked with" box on the Work page (one image each).
