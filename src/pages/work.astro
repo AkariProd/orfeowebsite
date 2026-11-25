@@ -5,17 +5,27 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import { projects, artists, type GalleryItem } from '../data/site';
 
-type Slide = { src: string; caption: string };
-const toSlide = (g: GalleryItem): Slide => (typeof g === 'string' ? { src: g, caption: '' } : { src: g.src, caption: g.caption ?? '' });
+type Slide = { src: string; caption: string; yt?: string };
+const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+const toSlide = (g: GalleryItem): Slide =>
+  typeof g === 'string' ? { src: g, caption: '' }
+  : 'youtube' in g ? { src: ytThumb(g.youtube), caption: g.caption ?? '', yt: g.youtube }
+  : { src: g.src, caption: g.caption ?? '' };
+// YouTube has no max-res thumbnail for some videos: fall back to the standard one
+const thumbFallback = (src: string) =>
+  src.includes('i.ytimg.com') && src.includes('maxresdefault') ? { onerror: "this.onerror=null;this.src=this.src.replace('maxresdefault','hqdefault')" } : {};
 const items = projects.map((p) => {
   let slides: Slide[] =
     p.gallery === 'artists'
       ? artists.map((a) => ({ src: a.image, caption: `${a.name} — ${a.role}${a.year ? ', ' + a.year : ''}` }))
       : p.gallery.map(toSlide);
-  if (!slides.length) slides = Array.from({ length: 5 }, () => ({ src: '', caption: '' }));
+  const nVideo = slides.filter((s) => s.yt).length, nImg = slides.length - nVideo;
+  const count = [nVideo && `${nVideo} video${nVideo > 1 ? 's' : ''}`, nImg && `${nImg} image${nImg > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Images coming soon';
+  // no photos yet: show placeholders after any video so the layout is visible
+  if (!slides.some((s) => !s.yt)) slides = [...slides, ...Array.from({ length: Math.max(0, 5 - slides.length) }, () => ({ src: '', caption: '' }))];
   const cover = p.image || slides[0].src;
   const portrait = p.gallery === 'artists';
-  return { ...p, slides, cover, portrait };
+  return { ...p, slides, cover, portrait, count };
 });
 const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
 ---
@@ -29,9 +39,9 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     {items.map((p, i) => (
       <button class="project card" data-open={i} aria-label={`Open ${p.title}`}>
         <div class="art" data-flip-id={`art-${i}`}>
-          {p.cover ? <img src={p.cover} alt="" loading="lazy" /> : <><span class="placeholder">[PROJECT KEY ART]</span><span class="kind">{p.kind.toUpperCase()}</span></>}
+          {p.cover ? <img src={p.cover} alt="" loading="lazy" {...thumbFallback(p.cover)} /> : <><span class="placeholder">[PROJECT KEY ART]</span><span class="kind">{p.kind.toUpperCase()}</span></>}
           {p.inProduction && <span class="pill status">In production</span>}
-          <span class="count-pill">{p.slides.length} {p.slides.length === 1 ? 'image' : 'images'}</span>
+          <span class="count-pill">{p.count}</span>
         </div>
         <div class="meta">
           <div>
@@ -64,8 +74,9 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
         <div class="g-col">
           <div class="g-track" data-track>
             {p.slides.map((s, k) => (
-              <figure class="slide" data-flip-id={k === 0 ? `art-${i}` : undefined}>
-                {s.src ? <img src={s.src} alt={s.caption} loading="lazy" /> : <span class="placeholder">[IMAGE {k + 1}]</span>}
+              <figure class:list={['slide', { video: s.yt }]} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt}>
+                {s.src ? <img src={s.src} alt={s.caption} loading="lazy" {...thumbFallback(s.src)} /> : <span class="placeholder">[IMAGE {k + 1}]</span>}
+                {s.yt && <span class="yt-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span>}
               </figure>
             ))}
           </div>
@@ -125,6 +136,10 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .g.portrait .slide { aspect-ratio: 4 / 5; }
   .slide.current { opacity: 1; }
   .slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .slide.video { aspect-ratio: 16 / 9; background: #000; }
+  .slide.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
+  .slide.video:has(iframe) .yt-play { display: none; }
+  .yt-play { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); display: grid; place-items: center; color: #fff; z-index: 1; }
   .back { position: absolute; top: 28px; left: 8vw; z-index: 3; height: 42px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 12px; background: var(--card); color: var(--text-90); font-size: 14px; cursor: pointer; opacity: 0; }
   .nav { position: absolute; right: 3vw; top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0; }
   .navbtn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--line-2); background: rgba(20,20,20,0.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: rotate(90deg); transition: background 0.2s; }
@@ -181,6 +196,17 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
       c.textContent = caps()[cur] || '';
     };
 
+    // YouTube slides: the real player goes in once the gallery has opened (keeps the
+    // opening animation smooth) and comes out on close, which also stops playback.
+    const mountVideos = () => el().querySelectorAll<HTMLElement>('.slide[data-yt]').forEach((s) => {
+      if (s.querySelector('iframe')) return;
+      const f = document.createElement('iframe');
+      f.src = `https://www.youtube-nocookie.com/embed/${s.dataset.yt}?rel=0&modestbranding=1&playsinline=1`;
+      f.title = 'Video'; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
+      s.appendChild(f);
+    });
+    const unmountVideos = () => view.querySelectorAll('.slide[data-yt] iframe').forEach((f) => f.remove());
+
     const open = (i: number) => {
       if (busy || isOpen) return;
       busy = true; g = i; cur = 0;
@@ -192,7 +218,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
       sync();
       gsap.set(track(), { y: centerY(0) });
       const [first, ...rest] = slides();
-      Flip.from(state, { targets: first, duration: 1, ease, onComplete: () => { isOpen = true; busy = false; back.focus({ preventScroll: true }); } });
+      Flip.from(state, { targets: first, duration: 1, ease, onComplete: () => { isOpen = true; busy = false; mountVideos(); back.focus({ preventScroll: true }); } });
       gsap.fromTo(rest, { y: 120, opacity: 0 }, { y: 0, opacity: 0.3, duration: 1, ease: 'expo.out', delay: 0.35, stagger: 0.06, clearProps: 'opacity,transform' });
       gsap.to(bg, { opacity: 1, duration: 0.6, ease: 'power2.out' });
       gsap.fromTo(texts(), { yPercent: 105 }, { yPercent: 0, duration: 1, ease, stagger: 0.05 });
@@ -200,6 +226,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     };
 
     const finishClose = () => {
+      unmountVideos();
       const art = cards[g].querySelector<HTMLElement>('.art')!;
       const [first, ...rest] = slides();
       const state = Flip.getState(first);
@@ -277,6 +304,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
+      unmountVideos();
       gsap.killTweensOf([view, ...view.querySelectorAll('*'), ...cards.map((c) => c.querySelector('.art'))]);
       document.body.style.overflow = '';
     };

@@ -99,13 +99,16 @@ export const projects = [
   { title: 'Seyni', meta: 'Short film by Ilham — score', years: '2026', kind: 'Film', inProduction: true,
     description: '[A few lines about the film and the score.]', link: '', linkLabel: '', image: '', gallery: [] },
   { title: 'Live performance', meta: 'Piano & keys', years: '', kind: 'Live', inProduction: false,
-    description: '[A few lines about the performance.]', link: '', linkLabel: 'Watch on YouTube', image: '', gallery: [] },
+    description: '[A few lines about the performance.]', link: 'https://youtu.be/XSjbgxFl47Y', linkLabel: 'Watch on YouTube',
+    image: 'https://i.ytimg.com/vi/XSjbgxFl47Y/maxresdefault.jpg',
+    gallery: [{ youtube: 'XSjbgxFl47Y', caption: 'Full performance' }] },
   // The artists box: its gallery is built from the `artists` list below.
   { title: "Artists I've worked with", meta: 'Sessions, live shows & records', years: '', kind: 'Artists', inProduction: false,
     description: 'Keys, production and arrangement for artists in Paris and beyond.', link: '', linkLabel: '', image: '', gallery: 'artists' },
 ] as Project[];
 
-export type GalleryItem = string | { src: string; caption?: string };
+/** A gallery entry: an image path, an image with a caption, or a YouTube video (id from the youtu.be link). */
+export type GalleryItem = string | { src: string; caption?: string } | { youtube: string; caption?: string };
 export type Project = {
   title: string; meta: string; years: string; kind: string; inProduction: boolean;
   description: string; link: string; linkLabel: string; image: string; gallery: GalleryItem[] | 'artists';
