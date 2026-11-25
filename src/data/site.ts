@@ -12,6 +12,7 @@
 export const site = {
   name: 'Orfeo',
   fullName: 'Orfeo Gombert',
+  displayName: 'Orfeo Walcott', // shown top-left and in the footer
   role: 'Composer',
   eyebrow: 'Composer & Sound Designer',
   location: 'Paris, France',

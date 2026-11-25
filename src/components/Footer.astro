@@ -4,7 +4,7 @@ const year = new Date().getFullYear();
 ---
 <footer class="footer">
   <div class="who">
-    <span class="sig">{site.name}</span>
+    <span class="sig">{site.displayName}</span>
     <span>{site.eyebrow} · Paris</span>
     <span class="copy">© {year} {site.fullName}</span>
   </div>
@@ -27,7 +27,7 @@ const year = new Date().getFullYear();
     border-top: 1px solid var(--line); font-size: 14px; color: var(--text-60);
   }
   .who { display: flex; flex-direction: column; gap: 6px; }
-  .sig { font-family: var(--hand); font-size: 30px; line-height: 1; color: var(--text); }
+  .sig { font-family: var(--display); font-weight: 500; font-size: 18px; line-height: 1.3; color: var(--text); }
   .copy { color: var(--text-40); font-size: 13px; }
   .links { display: flex; gap: 48px; }
   .col-links { display: flex; flex-direction: column; gap: 8px; }
