@@ -25,11 +25,12 @@ const poster = image || (youtube ? `https://i.ytimg.com/vi/${youtube}/hqdefault.
 </style>
 
 <script>
-  document.querySelectorAll<HTMLElement>('.media[data-yt]').forEach((box) => {
+  import { onPage } from '../lib/page';
+  onPage(() => document.querySelectorAll<HTMLElement>('.media[data-yt]').forEach((box) => {
     box.querySelector('.play')?.addEventListener('click', (e) => {
       e.preventDefault(); e.stopPropagation();
       const id = box.dataset.yt;
       box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
     });
-  });
+  }));
 </script>

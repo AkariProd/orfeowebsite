@@ -43,6 +43,10 @@ const fullTitle = title ? `${title} — ${site.name}` : site.seo.title;
       };
       upd();
       setInterval(upd, 30000);
+      document.addEventListener('orfeo:page', upd);
+    </script>
+    <script>
+      import '../lib/router';
     </script>
   </body>
 </html>

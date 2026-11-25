@@ -49,9 +49,19 @@ const cfg = JSON.stringify(fmod);
 </div>
 
 <script>
+  import { onPage } from '../lib/page';
+
   type Out = { val?: any };
   const STATE = ['Playing', 'Sustaining', 'Stopped', 'Starting', 'Stopping'];
   const FLAG = { READONLY: 1, AUTOMATIC: 2, GLOBAL: 4, DISCRETE: 8, LABELED: 16 };
+
+  /* One FMOD engine for the whole visit: it survives page changes, so coming
+     back to Home doesn't download the banks or boot FMOD a second time. */
+  type Engine = { F: any; sys: any; core: any; events: string[] };
+  let engine: Engine | null = null;
+  let booting: Promise<Engine> | null = null;
+  let tickInst: any = null;
+  let tickUi: (() => void) | null = null;
 
   function loadScript(src: string) {
     return new Promise<void>((res, rej) => {
@@ -84,200 +94,208 @@ const cfg = JSON.stringify(fmod);
     return out;
   }
 
-  function fmt(ms: number) {
+  const fmt = (ms: number) => {
     const s = Math.max(0, ms) / 1000;
     return `${String(Math.floor(s / 60)).padStart(2, '0')}:${(s % 60).toFixed(1).padStart(4, '0')}`;
-  }
-
+  };
   function call<T>(attempts: (() => T)[]): T | undefined {
     for (const a of attempts) { try { return a(); } catch { /* try next binding shape */ } }
     return undefined;
   }
 
-  document.querySelectorAll<HTMLElement>('[data-fmod]').forEach((root) => {
-    const cfg = JSON.parse(root.dataset.cfg || '{}');
-    const $ = <T extends HTMLElement>(s: string) => root.querySelector(s) as T;
-    const status = $('[data-status]'), led = $('[data-led]');
-    const startBtn = $<HTMLButtonElement>('[data-start]'), progress = $('[data-progress]'), bar = $('[data-bar]');
-    const ui = $('[data-ui]'), boot = $('[data-boot]');
-    const select = $<HTMLSelectElement>('[data-event]'), playBtn = $<HTMLButtonElement>('[data-play]');
-    const playLabel = $('[data-play-label]'), time = $("[data-fm-time]");
-    const params = $('[data-params]'), noParams = $('[data-noparams]');
+  function boot(cfg: any, onStatus: (t: string, pct?: number) => void): Promise<Engine> {
+    if (engine) return Promise.resolve(engine);
+    if (booting) return booting;
+    booting = (async () => {
+      onStatus('Downloading banks…', 0);
+      const urls = cfg.banks.map((b: string) => cfg.bankPath + b);
+      const blobs = await fetchWithProgress(urls, (d, t) =>
+        onStatus(`Downloading banks… ${(d / 1048576).toFixed(1)}${t ? ` / ${(t / 1048576).toFixed(1)}` : ''} MB`, t ? d / t : undefined));
+      onStatus('Starting FMOD…');
+      await loadScript(cfg.lib);
+      const dir = cfg.lib.replace(/[^/]+$/, '');
+      const F: any = { INITIAL_MEMORY: 128 * 1024 * 1024, locateFile: (p: string) => dir + p };
+      await new Promise<void>((res) => {
+        F.preRun = () => cfg.banks.forEach((b: string, i: number) => F.FS_createPreloadedFile('/', b, blobs[i], true, false));
+        F.onRuntimeInitialized = () => res();
+        (window as any).FMODModule(F);
+      });
+      const ok = (r: number, what: string) => { if (r !== F.OK) throw new Error(`${what}: ${call([() => F.ErrorString(r)]) || `error ${r}`}`); };
+      const o: Out = {};
+      ok(F.Studio_System_Create(o), 'Studio_System_Create'); const sys = o.val;
+      ok(sys.getCoreSystem(o), 'getCoreSystem'); const core = o.val;
+      core.setDSPBufferSize(2048, 2);
+      if (core.getDriverInfo(0, null, null, o, null, null) === F.OK) core.setSoftwareFormat(o.val, F.SPEAKERMODE_DEFAULT, 0);
+      ok(sys.initialize(256, F.STUDIO_INIT_NORMAL, F.INIT_NORMAL, null), 'initialize');
+      const banks: any[] = [];
+      for (const b of cfg.banks) { ok(sys.loadBankFile('/' + b, F.STUDIO_LOAD_BANK_NORMAL, o), `loadBankFile ${b}`); banks.push(o.val); }
+      blobs.forEach((u) => URL.revokeObjectURL(u));
+      setInterval(() => { sys.update(); if (tickInst && tickUi) tickUi(); }, 20);
 
-    let F: any, sys: any, core: any, desc: any, inst: any;
-    let globals = new Set<string>();
-    const o: Out = {};
-
-    const setStatus = (t: string, mode: 'idle' | 'busy' | 'on' | 'err' = 'idle') => { status.textContent = t; led.dataset.mode = mode; };
-    const ok = (r: number, what: string) => {
-      if (r !== F.OK) {
-        const msg = call([() => F.ErrorString(r)]) || `error ${r}`;
-        throw new Error(`${what}: ${msg}`);
-      }
-    };
-
-    async function start() {
-      startBtn.disabled = true;
-      progress.hidden = false;
-      try {
-        setStatus('Downloading banks…', 'busy');
-        const urls = cfg.banks.map((b: string) => cfg.bankPath + b);
-        const blobs = await fetchWithProgress(urls, (d, t) => {
-          if (t) bar.style.width = `${(d / t) * 100}%`;
-          setStatus(`Downloading banks… ${(d / 1048576).toFixed(1)}${t ? ` / ${(t / 1048576).toFixed(1)}` : ''} MB`, 'busy');
-        });
-
-        setStatus('Starting FMOD…', 'busy');
-        await loadScript(cfg.lib);
-        const dir = cfg.lib.replace(/[^/]+$/, '');
-        F = { INITIAL_MEMORY: 128 * 1024 * 1024, locateFile: (p: string) => dir + p };
-        await new Promise<void>((res) => {
-          F.preRun = () => cfg.banks.forEach((b: string, i: number) => F.FS_createPreloadedFile('/', b, blobs[i], true, false));
-          F.onRuntimeInitialized = () => res();
-          (window as any).FMODModule(F);
-        });
-
-        ok(F.Studio_System_Create(o), 'Studio_System_Create'); sys = o.val;
-        ok(sys.getCoreSystem(o), 'getCoreSystem'); core = o.val;
-        core.setDSPBufferSize(2048, 2);
-        if (core.getDriverInfo(0, null, null, o, null, null) === F.OK) core.setSoftwareFormat(o.val, F.SPEAKERMODE_DEFAULT, 0);
-        ok(sys.initialize(256, F.STUDIO_INIT_NORMAL, F.INIT_NORMAL, null), 'initialize');
-
-        const banks: any[] = [];
-        for (const b of cfg.banks) { ok(sys.loadBankFile('/' + b, F.STUDIO_LOAD_BANK_NORMAL, o), `loadBankFile ${b}`); banks.push(o.val); }
-        blobs.forEach((u) => URL.revokeObjectURL(u));
-
-        // keep the engine ticking
-        const tick = () => { sys.update(); if (inst) refresh(); };
-        setInterval(tick, 20);
-
-        // list events found in the banks
-        const paths = new Set<string>(cfg.events || []);
-        for (const bank of banks) for (const p of listEvents(bank)) paths.add(p);
-        let list = [...paths].filter((p) => p.startsWith('event:/'));
-        if (cfg.include?.length) list = list.filter((p) => cfg.include.some((x: string) => p.startsWith(x)) || cfg.events.includes(p));
-        list = list.filter((p) => sys.getEvent(p, {}) === F.OK);
-        list.sort((a, b) => (cfg.events.indexOf(b) > -1 ? 1 : 0) - (cfg.events.indexOf(a) > -1 ? 1 : 0) || a.localeCompare(b));
-        if (!list.length) throw new Error('No playable events found in the banks');
-        select.innerHTML = list.map((p) => `<option value="${p}">${p.replace('event:/', '')}</option>`).join('');
-
-        boot.hidden = true; ui.hidden = false;
-        setStatus(`Ready · ${list.length} event${list.length > 1 ? 's' : ''} loaded`, 'on');
-        choose(select.value);
-      } catch (e: any) {
-        console.error(e);
-        setStatus(e.message || 'FMOD failed to start', 'err');
-        startBtn.disabled = false;
-      }
-    }
-
-    function listEvents(bank: any): string[] {
-      const out: string[] = [];
-      const c: Out = {};
-      if (bank.getEventCount(c) !== F.OK || !c.val) return out;
-      const arr: Out = {}, n: Out = {};
-      const got = call([() => bank.getEventList(arr, c.val, n)]);
-      const descs: any[] = got === F.OK && Array.isArray(arr.val) ? arr.val : [];
-      for (const d of descs) {
-        const p: Out = {};
-        call([() => d.getPath(p, 512, null), () => d.getPath(p, 512, {})]);
-        if (typeof p.val === 'string') out.push(p.val);
-      }
-      return out;
-    }
-
-    function unlockAudio() {
-      // browsers keep audio suspended until a user gesture; poke the mixer from inside one
-      try { core.mixerSuspend(); core.mixerResume(); } catch { /* ignore */ }
-    }
-
-    function choose(path: string) {
-      if (inst) { inst.stop(F.STUDIO_STOP_IMMEDIATE); inst.release(); inst = null; }
-      ok(sys.getEvent(path, o), 'getEvent'); desc = o.val;
-      ok(desc.createInstance(o), 'createInstance'); inst = o.val;
-      buildParams();
-      setPlaying(false);
-    }
-
-    function buildParams() {
-      params.innerHTML = ''; globals = new Set();
-      const c: Out = {};
-      desc.getParameterDescriptionCount(c);
-      const n = c.val || 0;
-      let shown = 0;
-      for (let i = 0; i < n; i++) {
-        const pd = F.STUDIO_PARAMETER_DESCRIPTION();
-        if (desc.getParameterDescriptionByIndex(i, pd) !== F.OK) continue;
-        if ((cfg.hide || []).includes(pd.name)) continue;
-        const flags = pd.flags || 0;
-        const auto = (flags & FLAG.AUTOMATIC) || pd.type > 0;
-        const ro = flags & FLAG.READONLY;
-        if (flags & FLAG.GLOBAL) globals.add(pd.name);
-        const discrete = !!(flags & (FLAG.DISCRETE | FLAG.LABELED));
-        const labels: string[] = [];
-        if (flags & FLAG.LABELED) {
-          for (let v = pd.minimum; v <= pd.maximum; v++) {
-            const l: Out = {};
-            call([() => desc.getParameterLabelByName(pd.name, v, l, 64, null)]);
-            labels.push(typeof l.val === 'string' ? l.val : String(v));
-          }
+      const paths = new Set<string>(cfg.events || []);
+      for (const bank of banks) {
+        const c: Out = {}, arr: Out = {}, n: Out = {};
+        if (bank.getEventCount(c) !== F.OK || !c.val) continue;
+        if (call([() => bank.getEventList(arr, c.val, n)]) !== F.OK || !Array.isArray(arr.val)) continue;
+        for (const d of arr.val) {
+          const p: Out = {};
+          call([() => d.getPath(p, 512, null), () => d.getPath(p, 512, {})]);
+          if (typeof p.val === 'string') paths.add(p.val);
         }
-        const step = discrete ? 1 : (pd.maximum - pd.minimum) / 200 || 0.01;
-        const row = document.createElement('div');
-        row.className = 'fm-param';
-        row.innerHTML = `
-          <div class="fm-prow"><span class="fm-pname"></span><span class="fm-ptag"></span><span class="fm-pval"></span></div>
-          <input type="range" min="${pd.minimum}" max="${pd.maximum}" step="${step}" value="${pd.defaultvalue}">`;
-        (row.querySelector('.fm-pname') as HTMLElement).textContent = pd.name;
-        (row.querySelector('.fm-ptag') as HTMLElement).textContent = [flags & FLAG.GLOBAL ? 'global' : '', auto ? 'automatic' : '', labels.length ? 'labeled' : discrete ? 'discrete' : ''].filter(Boolean).join(' · ');
-        const input = row.querySelector('input') as HTMLInputElement;
-        const val = row.querySelector('.fm-pval') as HTMLElement;
-        const show = () => {
-          const v = Number(input.value);
-          val.textContent = labels.length ? labels[Math.round(v - pd.minimum)] ?? String(v) : discrete ? String(Math.round(v)) : v.toFixed(2);
-          input.style.setProperty('--p', `${((v - pd.minimum) / (pd.maximum - pd.minimum || 1)) * 100}%`);
-        };
-        input.disabled = !!(auto || (ro && !(flags & FLAG.GLOBAL)));
-        input.addEventListener('input', () => {
-          show();
-          const v = Number(input.value);
-          if (globals.has(pd.name)) sys.setParameterByName(pd.name, v, false);
-          else inst.setParameterByName(pd.name, v, false);
-        });
-        show();
-        params.appendChild(row);
-        shown++;
       }
-      noParams.hidden = shown > 0;
-    }
+      let list = [...paths].filter((p) => p.startsWith('event:/'));
+      if (cfg.include?.length) list = list.filter((p) => cfg.include.some((x: string) => p.startsWith(x)) || cfg.events.includes(p));
+      list = list.filter((p) => sys.getEvent(p, {}) === F.OK);
+      list.sort((a, b) => (cfg.events.indexOf(b) > -1 ? 1 : 0) - (cfg.events.indexOf(a) > -1 ? 1 : 0) || a.localeCompare(b));
+      if (!list.length) throw new Error('No playable events found in the banks');
+      engine = { F, sys, core, events: list };
+      return engine;
+    })();
+    booting.catch(() => { booting = null; });
+    return booting;
+  }
 
-    function setPlaying(on: boolean) {
-      playBtn.setAttribute('aria-pressed', String(on));
-      playLabel.textContent = on ? 'Stop' : 'Play';
-    }
+  onPage(() => {
+    const roots = [...document.querySelectorAll<HTMLElement>('[data-fmod]')];
+    if (!roots.length) return;
+    const offs: (() => void)[] = [];
 
-    function refresh() {
-      const s: Out = {}, t: Out = {};
-      inst.getPlaybackState(s);
-      inst.getTimelinePosition(t);
-      const st = s.val ?? 2;
-      time.textContent = fmt(t.val || 0);
-      const playing = st !== 2;
-      setPlaying(playing && st !== 4);
-      led.dataset.mode = playing ? 'play' : 'on';
-      status.textContent = `${STATE[st] || 'Ready'} · ${select.value.replace('event:/', '')}`;
-    }
+    roots.forEach((root) => {
+      const cfg = JSON.parse(root.dataset.cfg || '{}');
+      const $ = <T extends HTMLElement>(sel: string) => root.querySelector(sel) as T;
+      const status = $('[data-status]'), led = $('[data-led]');
+      const startBtn = $<HTMLButtonElement>('[data-start]'), progress = $('[data-progress]'), bar = $('[data-bar]');
+      const ui = $('[data-ui]'), bootBox = $('[data-boot]');
+      const select = $<HTMLSelectElement>('[data-event]'), playBtn = $<HTMLButtonElement>('[data-play]');
+      const playLabel = $('[data-play-label]'), time = $('[data-fm-time]');
+      const params = $('[data-params]'), noParams = $('[data-noparams]');
+      let desc: any = null, inst: any = null, globals = new Set<string>();
+      const o: Out = {};
 
-    startBtn.addEventListener('click', start);
-    select.addEventListener('change', () => choose(select.value));
-    playBtn.addEventListener('click', () => {
-      unlockAudio();
-      const s: Out = {};
-      inst.getPlaybackState(s);
-      if (s.val === 2 || s.val === 4) inst.start();
-      else inst.stop(F.STUDIO_STOP_ALLOWFADEOUT);
+      const setStatus = (t: string, mode: 'idle' | 'busy' | 'on' | 'err' | 'play' = 'idle') => { status.textContent = t; led.dataset.mode = mode; };
+      const unlockAudio = () => { try { engine!.core.mixerSuspend(); engine!.core.mixerResume(); } catch { /* ignore */ } };
+      const setPlaying = (on: boolean) => { playBtn.setAttribute('aria-pressed', String(on)); playLabel.textContent = on ? 'Stop' : 'Play'; };
+
+      function refresh() {
+        if (!inst) return;
+        const s: Out = {}, t: Out = {};
+        inst.getPlaybackState(s); inst.getTimelinePosition(t);
+        const st = s.val ?? 2;
+        time.textContent = fmt(t.val || 0);
+        setPlaying(st !== 2 && st !== 4);
+        led.dataset.mode = st !== 2 ? 'play' : 'on';
+        status.textContent = `${STATE[st] || 'Ready'} · ${select.value.replace('event:/', '')}`;
+      }
+
+      function release() {
+        if (!inst) return;
+        try { inst.stop(engine!.F.STUDIO_STOP_IMMEDIATE); inst.release(); } catch { /* ignore */ }
+        if (tickInst === inst) { tickInst = null; tickUi = null; }
+        inst = null;
+      }
+
+      function choose(path: string) {
+        const { F, sys } = engine!;
+        release();
+        if (sys.getEvent(path, o) !== F.OK) return setStatus(`Event not found: ${path}`, 'err');
+        desc = o.val;
+        desc.createInstance(o); inst = o.val;
+        tickInst = inst; tickUi = refresh;
+        buildParams();
+        setPlaying(false);
+      }
+
+      function buildParams() {
+        const { F, sys } = engine!;
+        params.innerHTML = ''; globals = new Set();
+        const c: Out = {};
+        desc.getParameterDescriptionCount(c);
+        let shown = 0;
+        for (let i = 0; i < (c.val || 0); i++) {
+          const pd = F.STUDIO_PARAMETER_DESCRIPTION();
+          if (desc.getParameterDescriptionByIndex(i, pd) !== F.OK) continue;
+          if ((cfg.hide || []).includes(pd.name)) continue;
+          const flags = pd.flags || 0;
+          const global = !!(flags & FLAG.GLOBAL);
+          const auto = (flags & FLAG.AUTOMATIC) || pd.type > 0;
+          if (global) globals.add(pd.name);
+          const discrete = !!(flags & (FLAG.DISCRETE | FLAG.LABELED));
+          const labels: string[] = [];
+          if (flags & FLAG.LABELED) {
+            for (let v = pd.minimum; v <= pd.maximum; v++) {
+              const l: Out = {};
+              call([() => desc.getParameterLabelByName(pd.name, v, l, 64, null)]);
+              labels.push(typeof l.val === 'string' ? l.val : String(v));
+            }
+          }
+          // start from the current value (globals keep theirs between pages)
+          let value = pd.defaultvalue;
+          if (global) { const g: Out = {}; if (sys.getParameterByName(pd.name, g, null) === F.OK && typeof g.val === 'number') value = g.val; }
+          const step = discrete ? 1 : (pd.maximum - pd.minimum) / 200 || 0.01;
+          const row = document.createElement('div');
+          row.className = 'fm-param';
+          row.innerHTML = `
+            <div class="fm-prow"><span class="fm-pname"></span><span class="fm-ptag"></span><span class="fm-pval"></span></div>
+            <input type="range" min="${pd.minimum}" max="${pd.maximum}" step="${step}" value="${value}">`;
+          (row.querySelector('.fm-pname') as HTMLElement).textContent = pd.name;
+          (row.querySelector('.fm-ptag') as HTMLElement).textContent = [global ? 'global' : '', auto ? 'automatic' : '', labels.length ? 'labeled' : discrete ? 'discrete' : ''].filter(Boolean).join(' · ');
+          const input = row.querySelector('input') as HTMLInputElement;
+          const val = row.querySelector('.fm-pval') as HTMLElement;
+          const show = () => {
+            const v = Number(input.value);
+            val.textContent = labels.length ? labels[Math.round(v - pd.minimum)] ?? String(v) : discrete ? String(Math.round(v)) : v.toFixed(2);
+            input.style.setProperty('--p', `${((v - pd.minimum) / (pd.maximum - pd.minimum || 1)) * 100}%`);
+          };
+          input.disabled = !!(auto || ((flags & FLAG.READONLY) && !global));
+          input.addEventListener('input', () => {
+            show();
+            const v = Number(input.value);
+            if (globals.has(pd.name)) sys.setParameterByName(pd.name, v, false);
+            else inst.setParameterByName(pd.name, v, false);
+          });
+          show();
+          params.appendChild(row);
+          shown++;
+        }
+        noParams.hidden = shown > 0;
+      }
+
+      function showUi() {
+        select.innerHTML = engine!.events.map((p) => `<option value="${p}">${p.replace('event:/', '')}</option>`).join('');
+        bootBox.hidden = true; ui.hidden = false;
+        setStatus(`Ready · ${engine!.events.length} event${engine!.events.length > 1 ? 's' : ''} loaded`, 'on');
+        choose(select.value);
+      }
+
+      async function start() {
+        startBtn.disabled = true; progress.hidden = false;
+        try {
+          await boot(cfg, (t, pct) => { setStatus(t, 'busy'); if (pct !== undefined) bar.style.width = `${pct * 100}%`; });
+          if (root.isConnected) showUi();
+        } catch (e: any) {
+          console.error(e);
+          setStatus(e.message || 'FMOD failed to start', 'err');
+          startBtn.disabled = false;
+        }
+      }
+
+      startBtn.addEventListener('click', start);
+      select.addEventListener('change', () => choose(select.value));
+      playBtn.addEventListener('click', () => {
+        if (!inst) return;
+        unlockAudio();
+        const s: Out = {};
+        inst.getPlaybackState(s);
+        if (s.val === 2 || s.val === 4) inst.start();
+        else inst.stop(engine!.F.STUDIO_STOP_ALLOWFADEOUT);
+      });
+      root.addEventListener('pointerdown', () => engine && unlockAudio(), { once: true });
+
+      if (engine) showUi();
+      offs.push(release); // leaving the page stops the event
     });
-    root.addEventListener('pointerdown', () => core && unlockAudio(), { once: true });
+
+    return () => offs.forEach((f) => f());
   });
 </script>
 

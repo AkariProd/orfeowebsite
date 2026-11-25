@@ -33,6 +33,9 @@ const { label } = Astro.props;
 </style>
 
 <script>
+  import { onPage } from '../lib/page';
+  onPage(() => {
+  const offs: (() => void)[] = [];
   document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((c) => {
     const track = c.querySelector<HTMLElement>('.track')!;
     const prev = c.querySelector<HTMLButtonElement>('[data-prev]')!;
@@ -46,6 +49,9 @@ const { label } = Astro.props;
     next.addEventListener('click', () => track.scrollBy({ left: step() }));
     track.addEventListener('scroll', sync, { passive: true });
     window.addEventListener('resize', sync);
+    offs.push(() => window.removeEventListener('resize', sync));
     sync();
+  });
+  return () => offs.forEach((f) => f());
   });
 </script>

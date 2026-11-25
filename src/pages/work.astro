@@ -149,8 +149,10 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
 <script>
   import { gsap } from 'gsap';
   import { Flip } from 'gsap/Flip';
+  import { onPage } from '../lib/page';
   gsap.registerPlugin(Flip);
 
+  onPage(() => {
   const view = document.querySelector<HTMLElement>('[data-view]');
   if (view) {
     const cards = [...document.querySelectorAll<HTMLElement>('[data-open]')];
@@ -249,12 +251,13 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
       const k = slides().indexOf(s as HTMLElement);
       if (k > cur) go(1); else if (k < cur) go(-1);
     });
-    window.addEventListener('keydown', (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (!isOpen) return;
       if (e.key === 'Escape') close();
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); go(1); }
       if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
-    });
+    };
+    window.addEventListener('keydown', onKey);
     let wheelLock = 0;
     view.addEventListener('wheel', (e) => {
       if ((e.target as HTMLElement).closest('.g-info')) return;
@@ -269,6 +272,14 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
       if ((e.target as HTMLElement).closest('.g-info')) return;
       const d = ty - e.changedTouches[0].clientY; if (Math.abs(d) > 40) go(d > 0 ? 1 : -1);
     });
-    window.addEventListener('resize', () => { if (isOpen) gsap.set(track(), { y: centerY(cur) }); });
+    const onResize = () => { if (isOpen) gsap.set(track(), { y: centerY(cur) }); };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      gsap.killTweensOf([view, ...view.querySelectorAll('*'), ...cards.map((c) => c.querySelector('.art'))]);
+      document.body.style.overflow = '';
+    };
   }
+  });
 </script>
