@@ -128,8 +128,25 @@ export const projects = [
       { src: '/images/work/netflix/still-4.jpg', ratio: 9 / 16 },
       { src: '/images/work/netflix/still-5.jpg', ratio: 9 / 16 },
     ] },
-  { title: 'UNESCO — World Peace Day', meta: 'Instagram campaign — music', years: 'Sep 2026', kind: 'Campaign', inProduction: false,
-    description: '[A few lines about the campaign and the music.]', link: '', linkLabel: '', image: '', gallery: [] },
+  { title: 'UNESCO — Les voix de la paix', meta: 'Music, International Day of Peace film', years: 'Sep 2026', kind: 'Campaign', inProduction: false,
+    description: "Les voix de la paix is a short film for the International Day of Peace, made for La France à l'UNESCO. Filmed inside the Maison de l'UNESCO in Paris, it carries the poetry of Aimé Césaire and Maryse Condé, with one idea at its heart: peace isn't only the absence of conflict, it is built every day through education, culture and dialogue.\n\nAfter Nouvelle École, Il-Ham Mohamed Said called me again, and I delivered the music in a day. He directed the film with Inès Casimirius-Ouadah.\n\nIt was released on 21 September 2026, the International Day of Peace, on La France à l'UNESCO's Instagram.",
+    link: 'https://www.instagram.com/p/DdjitnTtA6Y/', linkLabel: 'Watch on Instagram',
+    image: '/images/work/unesco/cover.jpg',
+    lineupTitle: 'Credits',
+    lineup: [
+      { name: 'Orfeo Walcott', role: 'Music' },
+      { name: 'Il-Ham Mohamed Said', role: 'Direction' },
+      { name: 'Inès Casimirius-Ouadah', role: 'Direction' },
+    ],
+    gallery: [
+      { instagram: 'DdjitnTtA6Y', ratio: 4 / 3, caption: 'The film' },
+      '/images/work/unesco/still-1.jpg',
+      '/images/work/unesco/still-2.jpg',
+      '/images/work/unesco/still-3.jpg',
+      '/images/work/unesco/still-4.jpg',
+      '/images/work/unesco/still-5.jpg',
+      '/images/work/unesco/still-6.jpg',
+    ] },
   { title: 'Shamanism', meta: 'ISART Digital — original score', years: '2026', kind: 'Game', inProduction: true,
     description: 'A climb up a tower, guided by an eagle spirit, with a Tibetan-led adaptive score built in Wwise for Unreal.', link: '/work/shamanism', linkLabel: 'Project page', image: '', gallery: [] },
   { title: 'Seyni', meta: 'Short film by Ilham — score', years: '2026', kind: 'Film', inProduction: true,
@@ -158,9 +175,9 @@ export const projects = [
 ] as Project[];
 
 /** A gallery entry: an image path, an image with a caption, or a YouTube video (id from the youtu.be link). */
-export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string } | { instagram: string; caption?: string } | { fmod: true; caption?: string };
+export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string } | { instagram: string; ratio?: number; caption?: string } | { fmod: true; caption?: string };
 // fmod = the interactive FMOD player (settings in `fmod` below)
-// instagram = the post id from an instagram.com/reel/ID or /p/ID link
+// instagram = the post id from an instagram.com/reel/ID or /p/ID link; ratio = shape of Instagram's video box (reels 4/5, landscape posts 4/3)
 // video = a video file in public/ (e.g. '/videos/clip.mp4'), poster = image shown before it plays
 // ratio = width / height of the photo, so portrait or square photos aren't cropped (leave it out for landscape)
 export type Project = {

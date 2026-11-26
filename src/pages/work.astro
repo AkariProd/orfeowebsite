@@ -6,13 +6,13 @@ import Icon from '../components/Icon.astro';
 import FmodDemo from '../components/FmodDemo.astro';
 import { projects, artists, type GalleryItem } from '../data/site';
 
-type Slide = { src: string; caption: string; yt?: string; vid?: string; ig?: string; fmod?: boolean; ratio?: number };
+type Slide = { src: string; caption: string; yt?: string; vid?: string; ig?: string; fmod?: boolean; ratio?: number; igRatio?: number };
 const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 const toSlide = (g: GalleryItem): Slide =>
   typeof g === 'string' ? { src: g, caption: '' }
   : 'youtube' in g ? { src: ytThumb(g.youtube), caption: g.caption ?? '', yt: g.youtube }
   : 'video' in g ? { src: g.poster ?? '', caption: g.caption ?? '', vid: g.video }
-  : 'instagram' in g ? { src: '', caption: g.caption ?? '', ig: g.instagram }
+  : 'instagram' in g ? { src: '', caption: g.caption ?? '', ig: g.instagram, igRatio: g.ratio ?? 4 / 5 }
   : 'fmod' in g ? { src: '', caption: g.caption ?? '', fmod: true }
   : { src: g.src, caption: g.caption ?? '', ratio: g.ratio };
 // YouTube has no max-res thumbnail for some videos: fall back to the standard one
@@ -84,7 +84,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
         <div class="g-col">
           <div class="g-track" data-track>
             {p.slides.map((s, k) => (
-              <figure class:list={['slide', { video: s.yt || s.vid, shaped: s.ratio, ig: s.ig, live: s.fmod }]} style={s.ratio ? `--r:${s.ratio}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt} data-ig={s.ig}>
+              <figure class:list={['slide', { video: s.yt || s.vid, shaped: s.ratio, ig: s.ig, live: s.fmod }]} style={s.ratio ? `--r:${s.ratio}` : s.ig ? `--igr:${s.igRatio};--igpad:${(100 / (s.igRatio || 0.8)).toFixed(3)}%;--igmax:${(s.igRatio || 0.8) >= 1 ? '100%' : '400px'}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt} data-ig={s.ig}>
                 {s.fmod ? <FmodDemo compact title="The Bayou — live in FMOD" />
                   : s.ig ? <span class="ig-wait">Loading the reel…</span>
                   : s.vid ? <video src={s.vid} poster={s.src || undefined} controls playsinline preload="none"></video>
@@ -160,8 +160,8 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .slide.video { aspect-ratio: 16 / 9; background: #000; }
   .slide.shaped { aspect-ratio: var(--r); width: min(100%, calc(72vh * var(--r))); align-self: center; }
   /* Instagram's player: header (54px) + a 4:5 video box; the rest of its page is cropped off */
-  .slide.ig { aspect-ratio: auto; width: min(100%, 400px, calc((72vh - 54px) * 0.8)); align-self: center; background: #fff; }
-  .slide.ig::before { content: ''; display: block; padding-top: calc(125% + 54px); }
+  .slide.ig { aspect-ratio: auto; width: min(100%, var(--igmax, 400px), calc((72vh - 54px) * var(--igr, 0.8))); align-self: center; background: #fff; }
+  .slide.ig::before { content: ''; display: block; padding-top: calc(var(--igpad, 125%) + 54px); }
   .slide.ig :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
   .ig-wait { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: #888; }
   .slide.live { aspect-ratio: auto; overflow: visible; background: transparent; }
@@ -177,7 +177,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .counter { font-family: var(--mono); font-size: 13px; color: var(--text-50); }
 
   @media (max-width: 900px) {
-    .slide.ig { width: min(100%, calc((46vh - 54px) * 0.8)); }
+    .slide.ig { width: min(100%, calc((46vh - 54px) * var(--igr, 0.8))); }
     .slide.shaped { width: min(100%, calc(46vh * var(--r))); }
     .g-col, .g.portrait .g-col { right: 50%; transform: translateX(50%); width: 84vw; }
     .g.portrait .g-col { width: 62vw; }
@@ -239,7 +239,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     const mountInstagram = () => el().querySelectorAll<HTMLElement>('.slide[data-ig]').forEach((s) => {
       if (s.querySelector('iframe')) return;
       const f = document.createElement('iframe');
-      f.src = `https://www.instagram.com/reel/${s.dataset.ig}/embed/`;
+      f.src = `https://www.instagram.com/p/${s.dataset.ig}/embed/`;
       f.title = 'Instagram reel'; f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.setAttribute('scrolling', 'no');
       s.appendChild(f);
     });
