@@ -109,14 +109,14 @@ export const projects = [
       { src: '/images/work/kubika/screen-5.jpg', caption: 'World map, the Vale' },
       '/images/work/kubika/screen-6.jpg',
     ] },
-  { title: 'Netflix × Rabanne — Nouvelle École', meta: 'Music & co-production, season launch reel', years: 'Aug 2026', kind: 'Campaign', inProduction: false,
-    description: "A reel launching the new season of Nouvelle École, Netflix France's rap competition, made with Rabanne. It invites rap fans to take part in « Sur qui tu poses ton million », with Kid Lonni and Tsuku as hosts.\n\nIl-Ham Mohamed Said, a director friend, was asked to make it and called me at the last minute: I had one hour to make the music so the production could see a first version. Twenty-four hours later I made a second version, again in about an hour, and that's the one you hear. I co-produced it with Milan Gombert.\n\nIt went out on Kid Lonni's and Nouvelle École's Instagram accounts in August 2026.",
+  { title: 'Netflix × Rabanne — Nouvelle École', meta: 'Music & sound design, season launch reel', years: 'Aug 2026', kind: 'Campaign', inProduction: false,
+    description: "A reel launching the new season of Nouvelle École, Netflix France's rap competition, made with Rabanne. It invites rap fans to take part in « Sur qui tu poses ton million », with Kid Lonni and Tsuku as hosts.\n\nIl-Ham Mohamed Said, a director friend, was asked to make it and called me at the last minute: I had one hour to make the audio so the production could see a first version. Twenty-four hours later I made a second version, again in about an hour, and that's the one you hear. The music and sound design are fully co-produced with Milan Gombert.\n\nIt went out on Kid Lonni's and Nouvelle École's Instagram accounts in August 2026.",
     link: 'https://www.instagram.com/reel/Db3f8zKNzZz/', linkLabel: 'Watch on Instagram',
     image: '/images/work/netflix/cover.jpg',
     lineupTitle: 'Credits',
     lineup: [
-      { name: 'Orfeo Walcott', role: 'Music & co-production' },
-      { name: 'Milan Gombert', role: 'Co-production' },
+      { name: 'Orfeo Walcott', role: 'Music & sound design' },
+      { name: 'Milan Gombert', role: 'Music & sound design' },
       { name: 'Il-Ham Mohamed Said', role: 'Direction' },
     ],
     gallery: [
