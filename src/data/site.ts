@@ -109,8 +109,24 @@ export const projects = [
       { src: '/images/work/kubika/screen-5.jpg', caption: 'World map, the Vale' },
       '/images/work/kubika/screen-6.jpg',
     ] },
-  { title: 'Paco Rabanne × Netflix', meta: 'Instagram trailer — music', years: 'Aug 2026', kind: 'Campaign', inProduction: false,
-    description: '[A few lines about the campaign and the music.]', link: '', linkLabel: '', image: '', gallery: [] },
+  { title: 'Netflix × Rabanne — Nouvelle École', meta: 'Music & co-production, season launch reel', years: 'Aug 2026', kind: 'Campaign', inProduction: false,
+    description: "A reel launching the new season of Nouvelle École, Netflix France's rap competition, made with Rabanne. It invites rap fans to take part in « Sur qui tu poses ton million », with Kid Lonni and Tsuku as hosts.\n\nA director friend was asked to make it and called me at the last minute: I had one hour to make the music so the production could see a first version. Twenty-four hours later I made a second version, again in about an hour, and that's the one you hear. I co-produced it with Milan Gombert.\n\nIt went out on Kid Lonni's and Nouvelle École's Instagram accounts in August 2026.",
+    link: 'https://www.instagram.com/reel/Db3f8zKNzZz/', linkLabel: 'Watch on Instagram',
+    image: '/images/work/netflix/cover.jpg',
+    lineupTitle: 'Credits',
+    lineup: [
+      { name: 'Orfeo Walcott', role: 'Music & co-production' },
+      { name: 'Milan Gombert', role: 'Co-production' },
+      { name: 'Il-Ham Mohamed Said', role: 'Video' },
+    ],
+    gallery: [
+      { instagram: 'Db3f8zKNzZz', caption: 'The reel' },
+      { src: '/images/work/netflix/still-1.jpg', ratio: 9 / 16 },
+      { src: '/images/work/netflix/still-2.jpg', ratio: 9 / 16 },
+      { src: '/images/work/netflix/still-3.jpg', ratio: 9 / 16 },
+      { src: '/images/work/netflix/still-4.jpg', ratio: 9 / 16 },
+      { src: '/images/work/netflix/still-5.jpg', ratio: 9 / 16 },
+    ] },
   { title: 'UNESCO — World Peace Day', meta: 'Instagram campaign — music', years: 'Sep 2026', kind: 'Campaign', inProduction: false,
     description: '[A few lines about the campaign and the music.]', link: '', linkLabel: '', image: '', gallery: [] },
   { title: 'Shamanism', meta: 'ISART Digital — original score', years: '2026', kind: 'Game', inProduction: true,
@@ -141,7 +157,8 @@ export const projects = [
 ] as Project[];
 
 /** A gallery entry: an image path, an image with a caption, or a YouTube video (id from the youtu.be link). */
-export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string };
+export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string } | { instagram: string; caption?: string };
+// instagram = the post id from an instagram.com/reel/ID or /p/ID link
 // video = a video file in public/ (e.g. '/videos/clip.mp4'), poster = image shown before it plays
 // ratio = width / height of the photo, so portrait or square photos aren't cropped (leave it out for landscape)
 export type Project = {
