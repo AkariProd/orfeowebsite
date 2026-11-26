@@ -89,7 +89,26 @@ export const home = {
 // While a gallery is empty, placeholder slots are shown. link = button inside the gallery (page or URL).
 export const projects = [
   { title: 'Kubika', meta: 'Music & adaptive music system', years: '2024 – 2026', kind: 'Game', inProduction: false,
-    description: '[A few lines about the game, the score and the adaptive music system you built.]', link: '', linkLabel: '', image: '', gallery: [] },
+    description: "Kubika is a cozy, minimalist 3D puzzle game by KubiCorp, the independent studio I co-founded. You flip gravity to guide little cubes through dreamlike worlds, from the rolling hills of the Vale to the misty nights of the Bayou.\n\nI composed the soundtrack and designed its adaptive music system. Instead of looping tracks, the music grows with the player's progress through each world. The video shows it across the Vale: no music at first, then a flute and a few sparse piano notes, then guitar and harp, fuller layers as the puzzles get harder, and finally fewer percussive elements and a violin to carry the player to the end of the world.\n\nYou can play with the Bayou's music yourself in the FMOD demo on my Home page.",
+    link: 'https://store.steampowered.com/app/4384150/KUBIKA/', linkLabel: 'Wishlist on Steam',
+    image: '/images/work/kubika/keyart.jpg', imagePosition: 'left center',
+    lineupTitle: 'Team',
+    lineup: [
+      { name: 'Orfeo Walcott', role: 'Music composer' },
+      { name: 'Arthur Kowskii Croquebois', role: 'Technical sound designer' },
+      { name: 'Léonard Gombert', role: 'Project lead' },
+      { name: 'François Iakouchev', role: 'Creative director' },
+      { name: 'Kilian Allaire', role: 'Studio head' },
+    ],
+    gallery: [
+      { video: '/videos/kubika-adaptive-music.mp4', poster: '/images/work/kubika/keyart.jpg', caption: 'Adaptive music across the Vale, levels 1 to 20' },
+      '/images/work/kubika/screen-1.jpg',
+      '/images/work/kubika/screen-2.jpg',
+      '/images/work/kubika/screen-3.jpg',
+      '/images/work/kubika/screen-4.jpg',
+      { src: '/images/work/kubika/screen-5.jpg', caption: 'World map, the Vale' },
+      '/images/work/kubika/screen-6.jpg',
+    ] },
   { title: 'Paco Rabanne × Netflix', meta: 'Instagram trailer — music', years: 'Aug 2026', kind: 'Campaign', inProduction: false,
     description: '[A few lines about the campaign and the music.]', link: '', linkLabel: '', image: '', gallery: [] },
   { title: 'UNESCO — World Peace Day', meta: 'Instagram campaign — music', years: 'Sep 2026', kind: 'Campaign', inProduction: false,
@@ -122,13 +141,16 @@ export const projects = [
 ] as Project[];
 
 /** A gallery entry: an image path, an image with a caption, or a YouTube video (id from the youtu.be link). */
-export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string };
+export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string };
+// video = a video file in public/ (e.g. '/videos/clip.mp4'), poster = image shown before it plays
 // ratio = width / height of the photo, so portrait or square photos aren't cropped (leave it out for landscape)
 export type Project = {
   title: string; meta: string; years: string; kind: string; inProduction: boolean;
   description: string; link: string; linkLabel: string; image: string; gallery: GalleryItem[] | 'artists';
   /** optional musicians / credits shown under the description */
   lineup?: { name: string; role: string; note?: string }[];  // note is shown in italics
+  lineupTitle?: string;   // heading above the lineup (default 'Lineup')
+  imagePosition?: string; // which part of the key art to keep when the card crops it, e.g. 'left center'
 };
 
 // Artists shown inside the "Artists I've worked with" box on the Work page (one image each).

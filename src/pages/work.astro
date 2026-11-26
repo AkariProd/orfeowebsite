@@ -5,11 +5,12 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import { projects, artists, type GalleryItem } from '../data/site';
 
-type Slide = { src: string; caption: string; yt?: string; ratio?: number };
+type Slide = { src: string; caption: string; yt?: string; vid?: string; ratio?: number };
 const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 const toSlide = (g: GalleryItem): Slide =>
   typeof g === 'string' ? { src: g, caption: '' }
   : 'youtube' in g ? { src: ytThumb(g.youtube), caption: g.caption ?? '', yt: g.youtube }
+  : 'video' in g ? { src: g.poster ?? '', caption: g.caption ?? '', vid: g.video }
   : { src: g.src, caption: g.caption ?? '', ratio: g.ratio };
 // YouTube has no max-res thumbnail for some videos: fall back to the standard one
 const thumbFallback = (src: string) =>
@@ -19,10 +20,10 @@ const items = projects.map((p) => {
     p.gallery === 'artists'
       ? artists.map((a) => ({ src: a.image, caption: `${a.name} — ${a.role}${a.year ? ', ' + a.year : ''}` }))
       : p.gallery.map(toSlide);
-  const nVideo = slides.filter((s) => s.yt).length, nImg = slides.length - nVideo;
+  const nVideo = slides.filter((s) => s.yt || s.vid).length, nImg = slides.length - nVideo;
   const count = [nVideo && `${nVideo} video${nVideo > 1 ? 's' : ''}`, nImg && `${nImg} image${nImg > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Images coming soon';
   // no photos yet: show placeholders after any video so the layout is visible
-  if (!slides.some((s) => !s.yt)) slides = [...slides, ...Array.from({ length: Math.max(0, 5 - slides.length) }, () => ({ src: '', caption: '' }))];
+  if (!slides.some((s) => !s.yt && !s.vid)) slides = [...slides, ...Array.from({ length: Math.max(0, 5 - slides.length) }, () => ({ src: '', caption: '' }))];
   const cover = p.image || slides[0].src;
   const portrait = p.gallery === 'artists';
   return { ...p, slides, cover, portrait, count };
@@ -39,7 +40,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     {items.map((p, i) => (
       <button class="project card" data-open={i} aria-label={`Open ${p.title}`}>
         <div class="art" data-flip-id={`art-${i}`}>
-          {p.cover ? <img src={p.cover} alt="" loading="lazy" {...thumbFallback(p.cover)} /> : <><span class="placeholder">[PROJECT KEY ART]</span><span class="kind">{p.kind.toUpperCase()}</span></>}
+          {p.cover ? <img src={p.cover} alt="" loading="lazy" style={p.imagePosition ? `object-position:${p.imagePosition}` : undefined} {...thumbFallback(p.cover)} /> : <><span class="placeholder">[PROJECT KEY ART]</span><span class="kind">{p.kind.toUpperCase()}</span></>}
           {p.inProduction && <span class="pill status">In production</span>}
           <span class="count-pill">{p.count}</span>
         </div>
@@ -68,7 +69,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
           <p class="oh desc"><span class="oh__inner">{p.description.split('\n\n').map((t) => <span class="para">{t}</span>)}</span></p>
           {p.lineup?.length && (
             <div class="oh lineup"><div class="oh__inner">
-              <span class="lineup-k">Lineup</span>
+              <span class="lineup-k">{p.lineupTitle || 'Lineup'}</span>
               <p class="m-list">{p.lineup.map((m, k) => <><span class="m-name">{m.name}</span> <span class="m-role">{m.role.toLowerCase()}{m.note && <> <em>{m.note}</em></>}</span>{k < p.lineup!.length - 1 && <span class="m-sep"> · </span>}</>)}</p>
             </div></div>
           )}
@@ -80,8 +81,9 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
         <div class="g-col">
           <div class="g-track" data-track>
             {p.slides.map((s, k) => (
-              <figure class:list={['slide', { video: s.yt, shaped: s.ratio }]} style={s.ratio ? `--r:${s.ratio}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt}>
-                {s.src ? <img src={s.src} alt={s.caption} loading="lazy" {...thumbFallback(s.src)} /> : <span class="placeholder">[IMAGE {k + 1}]</span>}
+              <figure class:list={['slide', { video: s.yt || s.vid, shaped: s.ratio }]} style={s.ratio ? `--r:${s.ratio}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt}>
+                {s.vid ? <video src={s.vid} poster={s.src || undefined} controls playsinline preload="none"></video>
+                  : s.src ? <img src={s.src} alt={s.caption} loading="lazy" {...thumbFallback(s.src)} /> : <span class="placeholder">[IMAGE {k + 1}]</span>}
                 {s.yt && <span class="yt-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span>}
               </figure>
             ))}
@@ -152,6 +154,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .slide.video { aspect-ratio: 16 / 9; background: #000; }
   .slide.shaped { aspect-ratio: var(--r); width: min(100%, calc(72vh * var(--r))); align-self: center; }
+  .slide.video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
   .slide.video :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
   .slide.video:has(:global(iframe)) .yt-play { display: none; }
   .yt-play { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); display: grid; place-items: center; color: #fff; z-index: 1; }
@@ -221,7 +224,10 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
       f.title = 'Video'; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
       s.appendChild(f);
     });
-    const unmountVideos = () => view.querySelectorAll('.slide[data-yt] iframe').forEach((f) => f.remove());
+    const unmountVideos = () => {
+      view.querySelectorAll('.slide[data-yt] iframe').forEach((f) => f.remove());
+      view.querySelectorAll('video').forEach((v) => v.pause());
+    };
 
     const open = (i: number) => {
       if (busy || isOpen) return;
