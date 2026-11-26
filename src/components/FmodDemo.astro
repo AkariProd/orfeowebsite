@@ -3,20 +3,22 @@ import { fmod } from '../data/site';
 import { toolIcons } from '../data/toolIcons';
 const glyph = toolIcons['FMOD'];
 const cfg = JSON.stringify(fmod);
+interface Props { compact?: boolean; title?: string }
+const { compact = false, title = fmod.title } = Astro.props;
 ---
-<div class="fm card" data-fmod data-cfg={cfg}>
+<div class:list={['fm card', { compact }]} data-fmod data-cfg={cfg}>
   <div class="fm-head">
     <span class="fm-logo" aria-hidden="true">
       {glyph && <svg viewBox={glyph.viewBox} set:html={glyph.body} />}
     </span>
     <div class="fm-titles">
-      <h3>{fmod.title}</h3>
+      <h3>{title}</h3>
       <p class="fm-status" data-status>Engine idle</p>
     </div>
     <span class="fm-led" data-led aria-hidden="true"></span>
   </div>
 
-  <p class="fm-text">{fmod.text}</p>
+  {!compact && <p class="fm-text">{fmod.text}</p>}
 
   <!-- before boot -->
   <div class="fm-boot" data-boot>
@@ -261,6 +263,7 @@ const cfg = JSON.stringify(fmod);
       }
 
       function showUi() {
+        (select.closest('.fm-select') as HTMLElement).hidden = engine!.events.length < 2; // nothing to pick with one event
         select.innerHTML = engine!.events.map((p) => `<option value="${p}">${p.replace('event:/', '')}</option>`).join('');
         bootBox.hidden = true; ui.hidden = false;
         setStatus(`Ready · ${engine!.events.length} event${engine!.events.length > 1 ? 's' : ''} loaded`, 'on');
@@ -293,6 +296,10 @@ const cfg = JSON.stringify(fmod);
 
       if (engine) showUi();
       offs.push(release); // leaving the page stops the event
+      // closing a Work gallery fades the music out
+      const onClose = () => { if (inst) { try { inst.stop(engine!.F.STUDIO_STOP_ALLOWFADEOUT); } catch { /* ignore */ } } };
+      document.addEventListener('orfeo:gallery-close', onClose);
+      offs.push(() => document.removeEventListener('orfeo:gallery-close', onClose));
     });
 
     return () => offs.forEach((f) => f());
@@ -349,6 +356,13 @@ const cfg = JSON.stringify(fmod);
   .fm-empty { margin: 0; font-size: 14px; color: var(--text-50); }
 
   .fm-credit { margin: 0; font-size: 12px; color: var(--text-40); }
+  .fm-select[hidden] { display: none; }
+  .fm.compact { max-width: none; width: 100%; padding: 18px; gap: 14px; }
+  @media (max-width: 900px) {
+    .fm.compact { padding: 14px; gap: 12px; }
+    .fm.compact .fm-credit { display: none; }
+    .fm.compact .fm-params :global(.fm-param) { padding: 10px 12px 12px; gap: 10px; }
+  }
 
   @media (max-width: 600px) {
     .fm { padding: 18px 16px 16px; }

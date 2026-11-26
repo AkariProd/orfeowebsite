@@ -89,7 +89,7 @@ export const home = {
 // While a gallery is empty, placeholder slots are shown. link = button inside the gallery (page or URL).
 export const projects = [
   { title: 'Kubika', meta: 'Music & adaptive music system', years: '2024 – 2026', kind: 'Game', inProduction: false,
-    description: "Kubika is a cozy, minimalist 3D puzzle game by KubiCorp, the independent studio I co-founded. You flip gravity to guide little cubes through dreamlike worlds, from the rolling hills of the Vale to the misty nights of the Bayou.\n\nI composed the soundtrack and designed its adaptive music system. Instead of looping tracks, the music grows with the player's progress through each world. The video shows it across the Vale: no music at first, then a flute and a few sparse piano notes, then guitar and harp, fuller layers as the puzzles get harder, and finally fewer percussive elements and a violin to carry the player to the end of the world.\n\nYou can play with the Bayou's music yourself in the FMOD demo on my Home page.",
+    description: "Kubika is a cozy, minimalist 3D puzzle game by KubiCorp, the independent studio I co-founded. You flip gravity to guide little cubes through dreamlike worlds, from the rolling hills of the Vale to the misty nights of the Bayou.\n\nI composed the soundtrack and designed its adaptive music system. Instead of looping tracks, the music grows with the player's progress through each world. The video shows it across the Vale: no music at first, then a flute and a few sparse piano notes, then guitar and harp, fuller layers as the puzzles get harder, and finally fewer percussive elements and a violin to carry the player to the end of the world.\n\nIn the box after the video, you can play with the Bayou's music yourself: it runs on the real FMOD engine, right in your browser.",
     link: 'https://store.steampowered.com/app/4384150/KUBIKA/', linkLabel: 'Wishlist on Steam',
     image: '/images/work/kubika/keyart.jpg', imagePosition: 'left center',
     lineupTitle: 'Team',
@@ -102,6 +102,7 @@ export const projects = [
     ],
     gallery: [
       { video: '/videos/kubika-adaptive-music.mp4', poster: '/images/work/kubika/keyart.jpg', caption: 'Adaptive music across the Vale, levels 1 to 20' },
+      { fmod: true, caption: 'Press start, then play, and move Scene and Intensity' },
       '/images/work/kubika/screen-1.jpg',
       '/images/work/kubika/screen-2.jpg',
       '/images/work/kubika/screen-3.jpg',
@@ -157,7 +158,8 @@ export const projects = [
 ] as Project[];
 
 /** A gallery entry: an image path, an image with a caption, or a YouTube video (id from the youtu.be link). */
-export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string } | { instagram: string; caption?: string };
+export type GalleryItem = string | { src: string; caption?: string; ratio?: number } | { youtube: string; caption?: string } | { video: string; poster?: string; caption?: string } | { instagram: string; caption?: string } | { fmod: true; caption?: string };
+// fmod = the interactive FMOD player (settings in `fmod` below)
 // instagram = the post id from an instagram.com/reel/ID or /p/ID link
 // video = a video file in public/ (e.g. '/videos/clip.mp4'), poster = image shown before it plays
 // ratio = width / height of the photo, so portrait or square photos aren't cropped (leave it out for landscape)
@@ -209,6 +211,8 @@ export const contact = {
    is selected first. Parameters are read from the bank automatically. */
 export const fmod = {
   enabled: true,
+  /** also show it on the Home page (it always lives in the Kubika gallery) */
+  showOnHome: false,
   title: 'Kubika — The Bayou, adaptive music live in FMOD',
   text: 'This is the real FMOD Studio runtime running in your browser with the game’s own banks. Press play and move the parameters.',
   lib: '/fmod/fmodstudio.js',

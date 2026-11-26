@@ -50,7 +50,7 @@ const stars = Array.from({ length: 42 }, (_, k) => ({
     </Carousel>
   </section>
 
-  {fmod.enabled && (
+  {fmod.enabled && fmod.showOnHome && (
     <section class="section col">
       <div class="section-head"><p class="label">Interactive audio</p></div>
       <FmodDemo />

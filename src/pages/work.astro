@@ -3,15 +3,17 @@
 // Codrops' Content Layout Transition, MIT: https://github.com/codrops/ContentLayoutTransition).
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
+import FmodDemo from '../components/FmodDemo.astro';
 import { projects, artists, type GalleryItem } from '../data/site';
 
-type Slide = { src: string; caption: string; yt?: string; vid?: string; ig?: string; ratio?: number };
+type Slide = { src: string; caption: string; yt?: string; vid?: string; ig?: string; fmod?: boolean; ratio?: number };
 const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 const toSlide = (g: GalleryItem): Slide =>
   typeof g === 'string' ? { src: g, caption: '' }
   : 'youtube' in g ? { src: ytThumb(g.youtube), caption: g.caption ?? '', yt: g.youtube }
   : 'video' in g ? { src: g.poster ?? '', caption: g.caption ?? '', vid: g.video }
   : 'instagram' in g ? { src: '', caption: g.caption ?? '', ig: g.instagram }
+  : 'fmod' in g ? { src: '', caption: g.caption ?? '', fmod: true }
   : { src: g.src, caption: g.caption ?? '', ratio: g.ratio };
 // YouTube has no max-res thumbnail for some videos: fall back to the standard one
 const thumbFallback = (src: string) =>
@@ -21,10 +23,10 @@ const items = projects.map((p) => {
     p.gallery === 'artists'
       ? artists.map((a) => ({ src: a.image, caption: `${a.name} — ${a.role}${a.year ? ', ' + a.year : ''}` }))
       : p.gallery.map(toSlide);
-  const nVideo = slides.filter((s) => s.yt || s.vid || s.ig).length, nImg = slides.length - nVideo;
-  const count = [nVideo && `${nVideo} video${nVideo > 1 ? 's' : ''}`, nImg && `${nImg} image${nImg > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Images coming soon';
+  const nVideo = slides.filter((s) => s.yt || s.vid || s.ig).length, nLive = slides.filter((s) => s.fmod).length, nImg = slides.length - nVideo - nLive;
+  const count = [nVideo && `${nVideo} video${nVideo > 1 ? 's' : ''}`, nLive && 'FMOD demo', nImg && `${nImg} image${nImg > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Images coming soon';
   // no photos yet: show placeholders after any video so the layout is visible
-  if (!slides.some((s) => !s.yt && !s.vid && !s.ig)) slides = [...slides, ...Array.from({ length: Math.max(0, 5 - slides.length) }, () => ({ src: '', caption: '' }))];
+  if (!slides.some((s) => !s.yt && !s.vid && !s.ig && !s.fmod)) slides = [...slides, ...Array.from({ length: Math.max(0, 5 - slides.length) }, () => ({ src: '', caption: '' }))];
   const cover = p.image || slides[0].src;
   const portrait = p.gallery === 'artists';
   return { ...p, slides, cover, portrait, count };
@@ -82,8 +84,9 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
         <div class="g-col">
           <div class="g-track" data-track>
             {p.slides.map((s, k) => (
-              <figure class:list={['slide', { video: s.yt || s.vid, shaped: s.ratio, ig: s.ig }]} style={s.ratio ? `--r:${s.ratio}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt} data-ig={s.ig}>
-                {s.ig ? <span class="ig-wait">Loading the reel…</span>
+              <figure class:list={['slide', { video: s.yt || s.vid, shaped: s.ratio, ig: s.ig, live: s.fmod }]} style={s.ratio ? `--r:${s.ratio}` : undefined} data-flip-id={k === 0 ? `art-${i}` : undefined} data-yt={s.yt} data-ig={s.ig}>
+                {s.fmod ? <FmodDemo compact title="The Bayou — live in FMOD" />
+                  : s.ig ? <span class="ig-wait">Loading the reel…</span>
                   : s.vid ? <video src={s.vid} poster={s.src || undefined} controls playsinline preload="none"></video>
                   : s.src ? <img src={s.src} alt={s.caption} loading="lazy" {...thumbFallback(s.src)} /> : <span class="placeholder">[IMAGE {k + 1}]</span>}
                 {s.yt && <span class="yt-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span>}
@@ -161,6 +164,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
   .slide.ig::before { content: ''; display: block; padding-top: calc(125% + 54px); }
   .slide.ig :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
   .ig-wait { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: #888; }
+  .slide.live { aspect-ratio: auto; overflow: visible; background: transparent; }
   .slide.video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
   .slide.video :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; }
   .slide.video:has(:global(iframe)) .yt-play { display: none; }
@@ -265,6 +269,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
 
     const finishClose = () => {
       unmountVideos();
+      document.dispatchEvent(new Event('orfeo:gallery-close'));
       const art = cards[g].querySelector<HTMLElement>('.art')!;
       const [first, ...rest] = slides();
       const state = Flip.getState(first);
@@ -318,6 +323,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     });
     const onKey = (e: KeyboardEvent) => {
       if (!isOpen) return;
+      if ((e.target as HTMLElement).closest?.('input, select, textarea')) return; // let sliders use the arrow keys
       if (e.key === 'Escape') close();
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); go(1); }
       if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
@@ -334,7 +340,7 @@ const kinds = ['All', ...Array.from(new Set(projects.map((p) => p.kind)))];
     let ty = 0;
     view.addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true });
     view.addEventListener('touchend', (e) => {
-      if ((e.target as HTMLElement).closest('.g-info')) return;
+      if ((e.target as HTMLElement).closest('.g-info, .fm')) return;
       const d = ty - e.changedTouches[0].clientY; if (Math.abs(d) > 40) go(d > 0 ? 1 : -1);
     });
     const onResize = () => { if (isOpen) gsap.set(track(), { y: centerY(cur) }); };
